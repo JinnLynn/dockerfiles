@@ -1,0 +1,25 @@
+_tmp/**
+
+# Windows
+# REF: https://github.com/github/gitignore/blob/master/Global/Windows.gitignore
+Desktop.ini
+Thumbs.db
+ehthumbs.db
+.BIN/
+
+# MacOSX
+# REF: https://github.com/github/gitignore/blob/master/Global/OSX.gitignore
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+.AppleDouble
+.LSOverride
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+Icon
+
+
+#!!! Icon must end with two lines
