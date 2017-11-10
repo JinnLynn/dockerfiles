@@ -1,0 +1,129 @@
+#!/bin/bash
+# REF: https://github.com/jessfraz/dockerfiles/blob/master/build-all.sh
+
+user="jinnlynn"
+arch=""
+single=""
+push=
+
+# arm
+machine=$(uname -m)
+[[ "${machine:0:4}" == "armv" ]] && arch="armhf"
+
+echo_red() {
+    echo -e "\033[31m$@\033[0m"
+}
+
+echo_green() {
+    echo -e "\033[32m$@\033[0m"
+}
+
+build() {
+    local f=$1
+    local build_dir=$(dirname $f)
+    # 镜像名就是目录名
+    local image=$(basename $build_dir)
+    local dockerfile=$(basename $f)
+
+    local suite=$(echo $dockerfile | cut -d. -s -f 2-)
+    [ -z "$arch" ] && {
+        suite=${suite:=latest}
+    } || {
+        [[ -z "$suite" ]] && suite=$arch || suite="$arch-$suite"
+    }
+
+    local tag="$image:$suite"
+    [[ -n "$user" ]] && tag="$user/$tag"
+
+    # echo "f:            $f"
+    # echo "build_dir:    $build_dir"
+    # echo "dockerfile:   $dockerfile"
+    # echo "image:        $image"
+    # echo "arch:         $arch"
+    # echo "suite:        $suite"
+    # echo "tag:          $tag"
+    # echo "========================================="
+    # echo
+    # echo
+
+    echo_green "Building $tag for context $image[$dockerfile]"
+    echo_green "================================================="
+    docker build --rm --force-rm --network=host -t $tag -f $f $build_dir && {
+        echo_green "================================================="
+        echo_green "Successfully built $tag with context $image"
+        echo_green "================================================="
+        if [[ -n "$push" ]]; then
+            push "$image" "$suite"
+        fi
+    } || {
+        echo_red "================================================="
+        echo_red "Build $tag with context $image fail."
+        echo_red "================================================="
+    }
+
+}
+
+push () {
+    local image=$1
+    local suite=$2
+    local tag="$image:$suite"
+    [[ -n "$user" ]] && tag="$user/$tag"
+    local n=0
+    until [ $n -ge 5 ]; do
+        docker push $tag && break
+        echo "Try #$n failed... sleeping for 15 seconds"
+        n=$[$n+1]
+        sleep 5
+    done
+}
+
+main () {
+    IFS=$'\n'
+    # files=( $(find . -maxdepth 1 -type d ! -path . ! -ipath '.\/[~\._]*' | sed 's|./||' | sort) )
+    [[ -z "$arch" ]] && {
+        files=$(find . -maxdepth 2 -iname Dockerfile* ! -iname *@* | sed 's|./||' | sort)
+    } || {
+        files=$(find . -maxdepth 2 -iname Dockerfile@$arch* | sed 's|./||' | sort)
+    }
+    unset IFS
+
+    cur=$(pwd)
+    for f in ${files[@]}; do
+        cd $cur
+        build "$f"
+        echo
+        echo
+    done
+}
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --user )
+            user="$2"
+            shift
+            ;;
+        --arch )
+            arch="$2"
+            shift
+            ;;
+        --single )
+            single="$2"
+            shift
+            ;;
+        --push )
+            push=1
+            ;;
+        *)
+            echo "Illegal option $1"
+            exit 1
+            ;;
+    esac
+    shift $(( $# > 0 ? 1 : 0 ))
+done
+
+[[ -n "$single" ]] && {
+    build $single
+    exit $?
+} || {
+    main
+}

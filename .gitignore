@@ -1,4 +1,8 @@
 _tmp/**
+_scripts/**
+
+genpac-server/
+genpac-watch/
 
 # Windows
 # REF: https://github.com/github/gitignore/blob/master/Global/Windows.gitignore

@@ -1,0 +1,14 @@
+#/bin/sh
+
+while true; do
+    pid=$(ps | grep EmbedThunderManager | grep -v grep | awk '{print $1}')
+    [ -z "$pid" ] && {
+        echo "Start xware..."
+        echo "========================="
+        /app/bin/portal
+        echo "========================="
+    } || {
+        echo "Wait for next check..."
+        sleep 60
+    }
+done

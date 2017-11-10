@@ -1,0 +1,17 @@
+FROM jinnlynn/alpine:armhf
+
+MAINTAINER JinnLynn <eatfishlin@gmail.com>
+
+ENV REDIR_SET GFWLIST
+ENV REDIR_PORT 9528
+
+RUN set -ex && \
+    apk add --no-cache dnsmasq iptables ipset
+
+COPY deps/entrypoint /app/bin/
+
+EXPOSE 53 53/udp 67/udp
+
+ENTRYPOINT ["/app/bin/entrypoint"]
+
+CMD ["dnsmasq", "-k", "--user=root", "--log-facility=-", "--conf-dir=/app/etc,*.conf"]

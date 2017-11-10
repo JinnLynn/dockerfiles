@@ -1,0 +1,11 @@
+FROM jinnlynn/alpine
+
+MAINTAINER JinnLynn <eatfishlin@gmail.com>
+
+RUN set -ex && \
+    apk add --no-cache python3
+
+COPY pip.conf /root/.pip/pip.conf
+
+CMD python3 --version
+

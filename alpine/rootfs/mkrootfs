@@ -1,0 +1,96 @@
+#!/usr/bin/env bash
+
+# REF: https://github.com/moby/moby/blob/master/contrib/mkimage-alpine.sh
+# MIRROR: http://nl.alpinelinux.org/alpine
+#         https://mirrors.tuna.tsinghua.edu.cn/alpine
+
+set -e
+
+[[ "$(id -u)" -eq 0 ]] || {
+    printf >&2 '%s requires root\n' "$0"
+    exit 1
+}
+
+usage() {
+    printf >&2 '%s: [-r release] [-m mirror] [-c additional repository] [-a arch] [-o output]\n' "$0"
+    exit 1
+}
+
+mkrootfs() {
+    TMP=$(mktemp -d ${TMPDIR:-/var/tmp}/alpine-docker-XXXXXXXXXX)
+    ROOTFS=$(mktemp -d ${TMPDIR:-/var/tmp}/alpine-docker-rootfs-XXXXXXXXXX)
+    trap "rm -rf $TMP $ROOTFS" EXIT TERM INT
+
+    # apt-static
+    {
+        apkv=$(curl -sSL $MAINREPO/$ARCH/APKINDEX.tar.gz | tar -Oxz |
+                grep --text '^P:apk-tools-static$' -A1 | tail -n1 | cut -d: -f2)
+        curl -sSL $MAINREPO/$ARCH/apk-tools-static-$apkv.apk |
+            tar -xz -C $TMP sbin/apk.static
+    }
+
+    # mkbase
+    # 预先安装的包:
+    # ca-certificates: 访问https均需要
+    $TMP/sbin/apk.static --repository $MAINREPO --no-cache --allow-untrusted \
+        --root $ROOTFS --initdb add alpine-base ca-certificates
+
+    # package repo
+    printf '%s\n' $MAINREPO > $ROOTFS/etc/apk/repositories
+    printf '%s\n' $ADDITIONALREPO >> $ROOTFS/etc/apk/repositories
+
+    # timezone
+    [[ -n "$TIMEZONE" ]] && \
+        cp "/usr/share/zoneinfo/$TIMEZONE" "$ROOTFS/etc/localtime"
+
+    # directory
+    mkdir -p $ROOTFS/app/{bin,etc,opt,tmp,run,log,cache,local}
+
+    # clean
+    rm -rf /var/cache/apk/*
+
+    # save
+    [[ -n "$(dirname $OUTPUT)" ]] && mkdir -p "$(dirname $OUTPUT)"
+    tar --numeric-owner -C $ROOTFS -c . | xz >$OUTPUT
+    echo "Build: $(date +%Y-%m-%d\ %H:%M:%S)" >$OUTPUT.txt
+}
+
+while getopts "hr:m:c:a:t:o:" opt; do
+    case $opt in
+        r)
+            REL=$OPTARG
+            ;;
+        m)
+            MIRROR=$OPTARG
+            ;;
+        c)
+            ADDITIONALREPO=$OPTARG
+            ;;
+        a)
+            ARCH=$OPTARG
+            ;;
+        t)
+            TIMEZONE=$OPTARG
+            ;;
+        o)
+            OUTPUT=$OPTARG
+            ;;
+        *)
+            usage
+            ;;
+    esac
+done
+
+REL=${REL:-edge}
+MIRROR=${MIRROR:-https://mirrors.ustc.edu.cn/alpine}
+MAINREPO=$MIRROR/$REL/main
+ADDITIONALREPO=$MIRROR/$REL/${ADDITIONALREPO:-community}
+ARCH=${ARCH:-$(uname -m)}
+
+# armhf
+[[ "${ARCH:0:3}" == "arm" ]] && ARCH=armhf
+
+TIMEZONE=${TIMEZONE-Asia/Shanghai}
+OUTPUT=${OUTPUT:-"$REL/rootfs-$ARCH.tar.xz"}
+
+mkrootfs

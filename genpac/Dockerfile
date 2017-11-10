@@ -1,0 +1,12 @@
+FROM jinnlynn/python
+
+MAINTAINER "JinnLynn <eatfishlin@gmail.com>"
+
+ARG PKG=https://github.com/JinnLynn/genpac/archive/master.zip
+
+RUN set -ex && \
+    cd /tmp && \
+    pip install $PKG && \
+    rm -rf /tmp/*
+
+CMD genpac -h

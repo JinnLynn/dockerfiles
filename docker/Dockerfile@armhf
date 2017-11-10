@@ -1,0 +1,21 @@
+FROM jinnlynn/alpine:armhf
+
+MAINTAINER "JinnLynn <eatfishlin@gmail.com>"
+
+ARG DOCKER_VERSION=17.09.0
+ARG DOCKER_BIN_URI=https://mirrors.ustc.edu.cn/docker-ce/linux/static/stable/armhf/docker-$DOCKER_VERSION-ce.tgz
+
+RUN set -ex && \
+    cd /tmp && \
+    apk add --no-cache curl tar && \
+    curl -fL -o docker.tgz $DOCKER_BIN_URI && \
+    tar --extract \
+        --file docker.tgz \
+        --strip-components 1 \
+        --directory /usr/local/bin/ && \
+    apk del --no-cache curl tar && \
+    rm -rf /tmp/*
+
+# 运行时需挂载 /var/run/docker.sock
+
+CMD docker version
