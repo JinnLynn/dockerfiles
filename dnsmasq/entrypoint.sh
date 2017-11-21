@@ -2,9 +2,7 @@
 # set -eo pipefail
 # shopt -s nullglob
 
-echo $@
-
-# if command starts with an option, prepend mysqld
+# if command starts with an option, prepend dnsmasq
 if [ "${1:0:1}" = '-' ]; then
     set -- dnsmasq "$@"
 fi
@@ -25,5 +23,4 @@ iptables -t nat -S | grep -q $REDIR_SET && true || {
 # echo 1 > /proc/sys/net/ipv4/ip_forward
 sysctl -w net.ipv4.ip_forward=1
 
-echo $@
 exec $@

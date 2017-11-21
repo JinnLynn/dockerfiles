@@ -8,7 +8,7 @@ ENV REDIR_PORT 9528
 RUN set -ex && \
     apk add --no-cache dnsmasq iptables ipset
 
-COPY deps/entrypoint /app/bin/
+COPY entrypoint.sh /app/bin/entrypoint
 
 EXPOSE 53 53/udp 67/udp
 
