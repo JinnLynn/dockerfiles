@@ -1,0 +1,10 @@
+#!/usr/bin/env sh
+. ~/git-shell-commands/_common.sh
+
+goto_git_repo_dir || exit 1
+
+repo=$(standard_repo_name "$1")
+
+check_repo_name "$repo" 1 || exit 1
+
+git init --bare "$repo"

@@ -1,0 +1,19 @@
+#!/usr/bin/env sh
+. ~/git-shell-commands/_common.sh
+
+goto_git_repo_dir || exit 1
+
+[ "$1" == "-q" ] && {
+    ls --color=auto -lh
+    exit
+}
+
+print_if_bare_repo='
+    if "$(git --git-dir="$1" rev-parse --is-bare-repository)" = true
+    then
+        du -sh "${1#./}"
+        # printf "%s\t%s\n" "${1#./}" "$(du -sh $1)"
+    fi
+'
+
+find -type d -name "*.git" -exec sh -c "$print_if_bare_repo" -- \{} \; -prune 2>/dev/null

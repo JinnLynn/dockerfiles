@@ -1,0 +1,12 @@
+#!/usr/bin/env sh
+. ~/git-shell-commands/_common.sh
+
+repo_src=$(standard_repo_name "$1")
+repo_dst=$(standard_repo_name "$2")
+
+goto_git_repo_dir || exit 1
+
+check_repo_name "$repo_src" || exit 1
+check_repo_name "$repo_dst" 1 || exit 1
+
+mv "$repo_src" "$repo_dst" && echo "Moved: $repo_src => $repo_dst"

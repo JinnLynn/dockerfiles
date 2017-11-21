@@ -1,0 +1,24 @@
+#!/usr/bin/env sh
+. ~/git-shell-commands/_common.sh
+
+goto_git_repo_dir || exit 1
+
+repo=$(standard_repo_name "$1")
+
+check_repo_name "$repo" || exit 1
+
+shift
+
+cd "$repo" 2>/dev/null || {
+    echo "Fail: repo $repo DOES NOT exists."
+    exit 1
+}
+
+[ "$1" == "-d" ] && {
+    shift
+    ~/git-shell-commands/_quick-stats.sh $@
+} || {
+    ~/git-shell-commands/_quick-stats.sh detailedGitStats
+}
+
+cd - 1>/dev/null

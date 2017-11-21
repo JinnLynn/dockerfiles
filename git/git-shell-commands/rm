@@ -1,0 +1,17 @@
+#!/usr/bin/env sh
+. ~/git-shell-commands/_common.sh
+
+goto_git_repo_dir || exit 1
+
+repo=$(standard_repo_name "$1")
+
+check_repo_name "$repo" || exit 1
+
+[[ ! -d "$repo" ]] && {
+    echo "Fail: repo $repo DOES NOT exists."
+    exit 1
+}
+
+# 不是真删除只是移动到.trash目录
+[[ ! -d .trash ]] && mkdir .trash
+mv "$repo" ".trash/$repo.$(date +%Y%m%d%H%M%S)" && echo "Removed: $repo"
