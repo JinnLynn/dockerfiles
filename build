@@ -20,16 +20,15 @@ echo_green() {
 
 build() {
     local f=$1
-    local build_dir=$(dirname $f)
-    # 镜像名就是目录名
-    local image=$(basename $build_dir)
     local dockerfile=$(basename $f)
+    local build_dir=$(dirname $f)
+    local image=${build_dir%%\/*}
+    suite=${build_dir##*\/}
 
-    local suite=$(echo $dockerfile | cut -d. -s -f 2-)
-    [ -z "$arch" ] && {
-        suite=${suite:=latest}
-    } || {
-        [[ -z "$suite" ]] && suite=$arch || suite="$arch-$suite"
+    [[ "$suite" == "$build_dir" ]] && suite=""
+    suite=${suite:=latest}
+    [[ -n "$arch" ]] &&  {
+        [[ "$suite" == "latest" ]] && suite=$arch || suite="$arch-$suite"
     }
 
     local tag="$image:$suite"
@@ -79,12 +78,9 @@ push () {
 
 main () {
     IFS=$'\n'
-    # files=( $(find . -maxdepth 1 -type d ! -path . ! -ipath '.\/[~\._]*' | sed 's|./||' | sort) )
-    [[ -z "$arch" ]] && {
-        files=$(find . -maxdepth 2 -iname Dockerfile* ! -iname *@* | sed 's|./||' | sort)
-    } || {
-        files=$(find . -maxdepth 2 -iname Dockerfile@$arch* | sed 's|./||' | sort)
-    }
+    local dockerfile="Dockerfile"
+    [[ -n "$arch" ]] && dockerfile="$dockerfile.$arch"
+    files=$(find . -maxdepth 3 ! -ipath '.\/[~\._]*' -iname $dockerfile | sed 's|./||' | sort)
     unset IFS
 
     cur=$(pwd)
