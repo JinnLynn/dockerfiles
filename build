@@ -5,6 +5,9 @@ user="jinnlynn"
 arch=""
 single=""
 push=
+verbose=
+
+base_dir=$(realpath $(dirname $0))
 
 # arm
 machine=$(uname -m)
@@ -16,6 +19,16 @@ echo_red() {
 
 echo_green() {
     echo -e "\033[32m$@\033[0m"
+}
+
+echo_split() {
+    local start=
+    if [[ -n "$@" ]]; then
+        echo "================================================="
+        echo "\n$@"
+        start="\n"
+    fi
+    echo "$start================================================="
 }
 
 build() {
@@ -34,49 +47,58 @@ build() {
     local tag="$image:$suite"
     [[ -n "$user" ]] && tag="$user/$tag"
 
-    # echo "f:            $f"
-    # echo "build_dir:    $build_dir"
-    # echo "dockerfile:   $dockerfile"
-    # echo "image:        $image"
-    # echo "arch:         $arch"
-    # echo "suite:        $suite"
-    # echo "tag:          $tag"
-    # echo "========================================="
-    # echo
-    # echo
-
     echo_green "Building $tag for context $image[$dockerfile]"
-    echo_green "================================================="
-    docker build --rm --force-rm --network=host -t $tag -f $f $build_dir && {
-        echo_green "================================================="
-        echo_green "Successfully built $tag with context $image"
-        echo_green "================================================="
+    echo_green $(echo_split)
+    if [[ -n "$verbose" ]]; then
+        echo_green "filepath:   $f"
+        echo_green "build_dir:  $build_dir"
+        echo_green "dockerfile: $dockerfile"
+        echo_green "image:      $image"
+        echo_green "arch:       $arch"
+        echo_green "suite:      $suite"
+        echo_green "tag:        $tag"
+        echo_green $(echo_split)
+    fi
+    if docker build --rm --force-rm --network=host -t $tag -f $f $build_dir; then
+        echo_green $(echo_split "Successfully built $tag with context $image")
         if [[ -n "$push" ]]; then
             push "$image" "$suite"
         fi
-    } || {
-        echo_red "================================================="
-        echo_red "Build $tag with context $image fail."
-        echo_red "================================================="
-    }
-
+    else
+        echo_red $(echo_split "Build $tag with context $image fail.")
+    fi
+    echo
+    echo
 }
 
-push () {
+push() {
     local image=$1
     local suite=$2
     local tag="$image:$suite"
+
+    if cat $base_dir/.pushignore 2>/dev/null | grep -e "^$image\$" -e "^$tag\$" -q; then
+        echo_red $(echo_split "Push $tag ignored.")
+        return 0
+    fi
+
     [[ -n "$user" ]] && tag="$user/$tag"
+    echo_green $(echo_split "Pushing $tag")
     local n=0
+    local pushed=
     until [ $n -ge 5 ]; do
-        docker push $tag && break
+        docker push $tag && {
+            echo_green $(echo_split "Successfully push $tag")
+            pushed=1
+            break
+        }
         echo "Try #$n failed... sleeping for 15 seconds"
         n=$[$n+1]
         sleep 5
     done
+    [[ -z "$pushed" ]] && echo_red $(echo_split "Push $tag fail.")
 }
 
-main () {
+build_all () {
     IFS=$'\n'
     local dockerfile="Dockerfile"
     [[ -n "$arch" ]] && dockerfile="$dockerfile.$arch"
@@ -87,39 +109,72 @@ main () {
     for f in ${files[@]}; do
         cd $cur
         build "$f"
-        echo
-        echo
     done
 }
 
-while [ $# -gt 0 ]; do
-    case "$1" in
-        --user )
-            user="$2"
-            shift
+build_single() {
+    local dockerfile=$1
+    [[ -d "$dockerfile" ]] && {
+        dockerfile="$dockerfile/Dockerfile"
+        [[ -n $arch ]] && dockerfile="$dockerfile.$arch"
+    }
+
+    [[ ! -f "$dockerfile" ]] && {
+        echo_red $(echo_split "$1 missing")
+        echo
+        return 1
+    }
+
+    build "$dockerfile"
+}
+
+usage="USAGE: $0 [-u USER] [-a ARCH] [-p] [-v] [DOCKERFILE ...]"
+while getopts ":u:a:pv" opt 2>/dev/null; do
+    case $opt in
+        u)
+            user=$OPTARG
             ;;
-        --arch )
-            arch="$2"
-            shift
+        a)
+            arch=$OPTARG
             ;;
-        --single )
-            single="$2"
-            shift
-            ;;
-        --push )
+        p)
             push=1
             ;;
-        *)
-            echo "Illegal option $1"
+        v)
+            verbose=1
+            ;;
+        \:)
+            echo "Option argument missing: ${@:OPTIND-1:1}." 1>&2
+            echo $usage
+            exit 1
+            ;;
+        \?)
+            echo "Invalid option: ${@:OPTIND-1:1}." 1>&2
+            echo $usage
             exit 1
             ;;
     esac
-    shift $(( $# > 0 ? 1 : 0 ))
 done
+shift $((OPTIND-1))
 
-[[ -n "$single" ]] && {
-    build $single
-    exit $?
-} || {
-    main
+
+[[ -n "$verbose" ]] && {
+    echo USER: $user
+    echo ARCH: $arch
+    echo PUSH: $push
+    echo FILE: $@
+    echo
 }
+
+
+if [[ $# -eq 0 ]]; then
+    build_all
+else
+    cur=$(pwd)
+    while [ $# -gt 0 ]; do
+        cd $cur
+        build_single $1
+        shift $(( $# > 0 ? 1 : 0 ))
+    done
+fi
+
