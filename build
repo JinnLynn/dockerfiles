@@ -6,6 +6,7 @@ arch=""
 single=""
 push=
 verbose=
+force_build=
 
 base_dir=$(realpath $(dirname $0))
 
@@ -59,7 +60,10 @@ build() {
         echo_green "tag:        $tag"
         echo_green $(echo_split)
     fi
-    if docker build --rm --force-rm --network=host -t $tag -f $f $build_dir; then
+
+    local build_opt=
+    [[ -n "$force_build" ]] && build_opt="--no-cache"
+    if docker build --rm --force-rm --network=host $build_opt -t $tag -f $f $build_dir; then
         echo_green $(echo_split "Successfully built $tag with context $image")
         if [[ -n "$push" ]]; then
             push "$image" "$suite"
@@ -129,7 +133,7 @@ build_single() {
 }
 
 usage="USAGE: $0 [-u USER] [-a ARCH] [-p] [-v] [DOCKERFILE ...]"
-while getopts ":u:a:pv" opt 2>/dev/null; do
+while getopts ":u:a:pbv" opt 2>/dev/null; do
     case $opt in
         u)
             user=$OPTARG
@@ -139,6 +143,9 @@ while getopts ":u:a:pv" opt 2>/dev/null; do
             ;;
         p)
             push=1
+            ;;
+        b)
+            force_build=1
             ;;
         v)
             verbose=1
@@ -159,14 +166,17 @@ shift $((OPTIND-1))
 
 
 [[ -n "$verbose" ]] && {
-    echo USER: $user
-    echo ARCH: $arch
-    echo PUSH: $push
-    echo FILE: $@
+    echo
+    echo "USER:        $user"
+    echo "ARCH:        $arch"
+    echo "PUSH:        $push"
+    echo "FORCE_BUILD: $force_build"
+    echo "FILE/DIR:    $@"
     echo
 }
 
 
+pushd "$base_dir" >/dev/null
 if [[ $# -eq 0 ]]; then
     build_all
 else
@@ -177,4 +187,4 @@ else
         shift $(( $# > 0 ? 1 : 0 ))
     done
 fi
-
+popd >/dev/null
