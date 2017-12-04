@@ -5,11 +5,11 @@ MAINTAINER JinnLynn <eatfishlin@gmail.com>
 ARG SS_VER=3.1.0
 ARG SS_URL=https://github.com/shadowsocks/shadowsocks-libev/releases/download/v$SS_VER/shadowsocks-libev-$SS_VER.tar.gz
 
-ENV SS_ADDR         0.0.0.0
-ENV SS_PORT         8388
-ENV SS_PWD          ss_default_password
-ENV SS_METHOD       aes-256-cfb
-ENV SS_ARGS         -t 30 -d 8.8.8.8 -d 8.8.4.4 --fast-open -u -v
+ENV SS_ADDR     0.0.0.0
+ENV SS_PORT     8388
+ENV SS_PWD      ss_default_password
+ENV SS_METHOD   aes-256-cfb
+ENV SS_ARGS     -t 30 -d 8.8.8.8 --fast-open -u -v
 
 RUN set -ex && \
     cd /tmp && \
