@@ -32,6 +32,13 @@ echo_split() {
     echo "$start================================================="
 }
 
+is_ignored() {
+    local type=$1
+    local image=$2
+    local tag=$3
+    cat $base_dir/.buildignore 2>/dev/null | grep -q -e "^$type,$image\$" -e "^$type,$tag\$"
+}
+
 build() {
     local f=$1
     local dockerfile=$(basename $f)
@@ -61,6 +68,11 @@ build() {
         echo_green $(echo_split)
     fi
 
+    if is_ignored B $image $tag; then
+        echo_red $(echo_split "Build $tag ignored.")
+        return 0
+    fi
+
     local build_opt=
     [[ -n "$force_build" ]] && build_opt="--no-cache"
     if docker build --rm --force-rm --network=host $build_opt -t $tag -f $f $build_dir; then
@@ -80,7 +92,7 @@ push() {
     local suite=$2
     local tag="$image:$suite"
 
-    if cat $base_dir/.pushignore 2>/dev/null | grep -e "^$image\$" -e "^$tag\$" -q; then
+    if is_ignored P $image $tag; then
         echo_red $(echo_split "Push $tag ignored.")
         return 0
     fi

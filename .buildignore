@@ -1,0 +1,8 @@
+# 忽略build push的image或tag
+# 语法:
+# P,IMAGE[:TAG]
+# B,IMAGE[:TAG]
+# ==================================
+P,git-server
+P,genpac-server
+P,genpac-watch

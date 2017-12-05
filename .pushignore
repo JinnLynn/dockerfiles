@@ -1,4 +1,0 @@
-# 忽略push的image或tag
-git-server
-genpac-server
-genpac-watch
