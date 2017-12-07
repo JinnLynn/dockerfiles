@@ -33,7 +33,7 @@ RUN set -ex && \
             | sort -u \
     )" && \
     apk add --no-cache --virtual .run-deps $runDeps && \
-    apk del .build-deps && \
+    apk del --no-cache .build-deps && \
     rm -rf /tmp/*
 
 EXPOSE $SS_PORT/tcp $SS_PORT/udp
