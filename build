@@ -4,6 +4,7 @@ USER=${DOCKER_USER:-}
 PUSH=false
 VERBOSE=false
 FORCE_BUILD=false
+DRY_RUN=false
 
 BASE_DIR=$(realpath $(dirname $0))
 ARCH=
@@ -80,16 +81,13 @@ is_push_ignored() {
     is_ignored P $1 $2
 }
 
-is_push() {
-    $PUSH
+is_true() {
+    [[ -z "$1" || "$1" == "false" ]] && return 1 || return 0
 }
 
-is_froce_build() {
-    $FORCE_BUILD
-}
-
-is_verbose() {
-    $VERBOSE
+run_cmd() {
+    is_true $DRY_RUN && echo "$@" && return 0
+    $@
 }
 
 build() {
@@ -110,7 +108,7 @@ build() {
 
     echo_green "Building $tag for context $build_dir[$dockerfile]"
     echo_green $(echo_split)
-    if is_verbose; then
+    if is_true $VERBOSE; then
         echo_green "arch:       $ARCH"
         echo_green "filepath:   $f"
         echo_green "build_dir:  $build_dir"
@@ -125,10 +123,10 @@ build() {
         echo_red $(echo_split "Build $tag ignored.")
     else
         local build_opt=
-        is_froce_build && build_opt="--no-cache"
-        if docker build --rm --force-rm --network=host $build_opt -t $tag -f $f $build_dir; then
+        is_true $FORCE_BUILD && build_opt="--no-cache"
+        if run_cmd docker build --rm --force-rm --network=host $build_opt -t $tag -f $f $build_dir; then
             echo_green $(echo_split "Successfully built $tag with context $image")
-            if is_push; then
+            if is_true $PUSH; then
                 push "$image" "$suite"
             fi
         else
@@ -154,7 +152,7 @@ push() {
     local n=0
     local pushed=
     until [ $n -ge 5 ]; do
-        docker push $tag && {
+        run_cmd docker push $tag && {
             echo_green $(echo_split "Successfully push $tag")
             pushed=1
             break
@@ -210,7 +208,17 @@ check_param() {
 }
 
 usage() {
-    echo -e "USAGE: \n    $0 [--user|-u USER] [--push|-p] [--force|-f] [--verbose|-v] [DOCKERFILE ...]"
+    cat <<EOF
+USAGE: $0 [OPTIONS] [DOCKERFILE ...]
+
+Options:
+  -h, --help        帮助
+  -u, --user USER   Docker hub用户名
+  -p, --push        构造镜像后推送至镜像库
+  -f, --force       强制重建，不使用缓存
+  -d, --dry-run     仅输出运行过程
+  -v, --verbose     详细输出
+EOF
 }
 
 # =====
@@ -233,6 +241,10 @@ while (( ${#} )); do
         --verbose|-v )
             VERBOSE=true
             ;;
+        --dry-run|-d)
+            DRY_RUN=true
+            VERBOSE=true
+            ;;
         --help|-h )
             usage
             exit_ok
@@ -250,12 +262,13 @@ done
 
 detect_arch
 
-is_verbose && {
+is_true $VERBOSE && {
     echo
     echo "USER:        $USER"
     echo "ARCH:        $ARCH"
     echo "PUSH:        $PUSH"
     echo "FORCE_BUILD: $FORCE_BUILD"
+    echo "DRY_RUN:     $DRY_RUN"
     echo "FILE/DIR:    $@"
     echo
 }
