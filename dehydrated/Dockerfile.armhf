@@ -10,4 +10,6 @@ RUN set -ex && \
     curl -SL -o /bin/dehydrated $RAW_URL && \
     chmod +x /bin/dehydrated
 
-CMD dehydrated -h
+ENTRYPOINT ["dehydrated"]
+
+CMD ["-h"]
