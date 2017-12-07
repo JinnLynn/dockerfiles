@@ -6,7 +6,7 @@ ARG PKG=https://github.com/JinnLynn/genpac/archive/master.zip
 
 RUN set -ex && \
     cd /tmp && \
-    pip install $PKG && \
+    pip install --no-cache-dir $PKG && \
     rm -rf /tmp/*
 
 CMD genpac -h

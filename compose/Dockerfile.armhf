@@ -10,7 +10,7 @@ RUN set -ex && \
     cd /tmp && \
     apk add --no-cache curl && \
     curl -SL $URL | tar xz --strip 1 && \
-    pip install -r requirements.txt && \
+    pip install --no-cache-dir -r requirements.txt && \
     python setup.py install && \
     apk del --no-cache curl && \
     rm -rf /tmp/*

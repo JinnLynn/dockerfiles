@@ -4,7 +4,7 @@ MAINTAINER JinnLynn <eatfishlin@gmail.com>
 
 RUN set -ex && \
     apk add --no-cache build-base linux-headers python-dev && \
-    pip install flask uwsgi && \
+    pip install --no-cache-dir flask uwsgi && \
     apk del --no-cache build-base linux-headers python-dev
 
 ADD ./app.py /app/app.py

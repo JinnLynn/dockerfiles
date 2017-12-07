@@ -2,10 +2,12 @@ FROM jinnlynn/alpine
 
 MAINTAINER JinnLynn <eatfishlin@gmail.com>
 
-RUN set -ex && \
-    apk add --no-cache python3
+ARG MIRROR="https://mirrors.ustc.edu.cn/pypi/web/simple"
 
-COPY pip.conf /root/.pip/pip.conf
+RUN set -ex && \
+    apk add --no-cache python3 && \
+    mkdir -p /root/.pip && \
+    echo -e "[global]\nindex-url = $MIRROR" >/root/.pip/pip.conf
 
 CMD python3 --version
 
