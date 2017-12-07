@@ -1,91 +1,33 @@
 # 树莓派网关上运行的服务
-# 下载： aria2 xware
-# 匿名代理： dnsmasq + dns-tunnel + redir + kcptun
-# 代理: socks5 polipo
-# 流量: vnstat
-version: '3'
+# 翻墙(匿名代理): gfw-client.yml, 同时加载即可
+# 其它服务:
+# 流量统计 下载    web    git     DLNA      dnsmasq配置监控更新
+# vnstat  aria2  nginx  gitsrv  minidlna  dnsmasq-conf
+version: "3"
 services:
-    kcptun:
-        image: jinnlynn/kcptun:armhf
-        restart: always
-        networks:
-            default:
-                ipv4_address: 172.16.0.100
-        env_file: ${KITS}/etc/docker/env.ini
-        command: client_linux_arm6 --localaddr :9520 --remoteaddr $KCPTUN_REMOTE $KCPTUN_ARGS
-    redir:
-        image: jinnlynn/shadowsocks:armhf
-        restart: always
-        #! 必须
-        network_mode: host
-        depends_on:
-            - kcptun
-        volumes:
-            - ${KITS}/etc/shadowsocks:/app/etc
-        command: ss-redir -c /app/etc/config-kcptun.json --reuse-port -l 9528 -v
-    dns-tunnel:
-        image: jinnlynn/shadowsocks:armhf
-        restart: always
-        ports:
-            - 9553:1080/udp
-        volumes:
-            - ${KITS}/etc/shadowsocks:/app/etc
-        command: ss-tunnel -c /app/etc/config.json -L 8.8.8.8:53 -u -v
-    dnsmasq:
-        image: jinnlynn/dnsmasq:armhf
-        restart: always
-        #! 必须
-        privileged: true
-        network_mode: host
-        depends_on:
-            - dns-tunnel
-            - redir
-        volumes:
-            - ${KITS}/etc/dnsmasq:/app/etc
-            - ${KITS}/var/local/genpac/dnsmasq.conf:/app/local/dnsmasq.conf
-        command: ["-k", "--user=root", "--log-facility=-", "--conf-dir=/app/etc,*.conf", "--conf-file=/app/local/dnsmasq.conf"]
     dnsmasq-conf:
         image: jinnlynn/genpac-watch:armhf
         restart: always
-        env_file: ${KITS}/etc/docker/env.ini
+        environment:
+            - GPW_REMOTE
+            - GPW_TOKEN
+            - GPW_CONTAINER
         volumes:
             - /var/run/docker.sock:/var/run/docker.sock
-            - ${KITS}/var/local/genpac/dnsmasq.conf:/app/local/dnsmasq.conf
-    socks5:
-        image: jinnlynn/shadowsocks:armhf
-        restart: always
-        networks:
-            default:
-                ipv4_address: 172.16.0.101
-        depends_on:
-            - kcptun
-        ports:
-            - 9527:1080
-            - 9527:1080/udp
-        volumes:
-            - ${KITS}/etc/shadowsocks:/app/etc
-        command: ss-local -c /app/etc/config-kcptun.json --fast-open -v
-    http:
-        image: jinnlynn/polipo:armhf
-        restart: always
-        depends_on:
-            - socks5
-        ports:
-            - 9580:8123
-        command: polipo proxyAddress=0.0.0.0 socksProxyType=socks5 socksParentProxy=172.16.0.101:1080
+            - ${KITS_LOCAL}/genpac/dnsmasq.conf:/app/local/dnsmasq.conf
     vnstat:
         image: jinnlynn/vnstat:armhf
         restart: always
         #! 必须
         network_mode: host
         volumes:
-            - ${KITS}/var/local/vnstat:/var/lib/vnstat
+            - ${KITS_LOCAL}/vnstat:/var/lib/vnstat
     aria2:
         image: jinnlynn/aria2:armhf
         restart: unless-stopped
         networks:
             default:
-                ipv4_address: 172.16.0.102
+                ipv4_address: 172.16.0.11
         ports:
             - 6900:6900
             - 6901:6901/udp
@@ -100,13 +42,12 @@ services:
             - 6800:6800
         volumes:
             - ${KITS}/etc/nginx/default.conf:/etc/nginx/conf.d/default.conf
-            - ${KITS}/var/local/dehydrated/certs:/etc/nginx/certs
-    git:
-        image: jinnlynn/git:armhf
+            - ${KITS_LOCAL}/dehydrated/certs:/etc/nginx/certs
+    gitsrv:
+        image: jinnlynn/git-server:armhf
         restart: always
-        env_file: ${KITS}/etc/docker/env.ini
         ports:
-            - "9448:22" # 双引号去掉会出错, WHY
+            - "5448:22" # 双引号去掉会出错, WHY
         volumes:
             - /cellar/mnt/repo/git:/app/local
             - /etc/ssh/ssh_host_dsa_key:/etc/ssh/ssh_host_dsa_key
@@ -114,6 +55,14 @@ services:
             - /etc/ssh/ssh_host_ed25519_key:/etc/ssh/ssh_host_ed25519_key
             - /etc/ssh/ssh_host_rsa_key:/etc/ssh/ssh_host_rsa_key
             - ${KITS}/etc/docker/jkey.pub:/app/etc/jkey.pub
+    minidlna:
+        image: jinnlynn/minidlna:armhf
+        restart: always
+        network_mode: host
+        volumes:
+            - /cellar/mnt/media:/app/opt/media
+            - ${KITS_LOCAL}/minidlna:/app/local
+            - ${KITS}/var/log:/app/log
     # xware:
     #     image: jinnlynn/xware:armhf
     #     restart: unless-stopped

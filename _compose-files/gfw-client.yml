@@ -1,0 +1,71 @@
+# 翻墙 客户端
+# 匿名代理: kcptun + redir + dns-tunnel + dnsmasq
+# 代理: socks5 polipo
+version: "3"
+services:
+    kcptun:
+        image: jinnlynn/kcptun:armhf
+        restart: always
+        networks:
+            freegate:
+                ipv4_address: 172.16.10.11
+        command: client_linux_arm7 -r $KCPTUN_REMOTE $KCPTUN_ARGS
+    redir:
+        image: jinnlynn/shadowsocks:armhf
+        restart: always
+        #! 必须
+        network_mode: host
+        depends_on:
+            - kcptun
+        command: ss-redir -s 172.16.10.11 -p 12948 $SS_AUTH -l 9528 --reuse-port $SS_ARGS
+    dns-tunnel:
+        image: jinnlynn/shadowsocks:armhf
+        restart: always
+        networks:
+            - freegate
+        ports:
+            - 9553:1080/udp
+        command: ss-tunnel $SS_SERVER $SS_AUTH -l 1080 -L 8.8.8.8:53 $SS_ARGS
+    dnsmasq:
+        image: jinnlynn/dnsmasq:armhf
+        restart: always
+        #! 必须
+        privileged: true
+        network_mode: host
+        depends_on:
+            - dns-tunnel
+            - redir
+        volumes:
+            - ${KITS}/etc/dnsmasq:/app/etc
+            - ${KITS_LOCAL}/dnsmasq:/app/local
+            - ${KITS_LOCAL}/genpac/dnsmasq.conf:/app/local/gfwlist.conf
+        command: ["-k", "--user=root", "--log-facility=-", "--conf-dir=/app/etc,*.conf", "--conf-file=/app/local/gfwlist.conf", "--dhcp-leasefile=/app/local/dnsmasq.leases"]
+    socks5:
+        image: jinnlynn/shadowsocks:armhf
+        restart: always
+        networks:
+            freegate:
+                ipv4_address: 172.16.10.12
+        depends_on:
+            - kcptun
+        ports:
+            - 9527:1080
+            - 9527:1080/udp
+        command: ss-local -s 172.16.10.11 -p 12948 $SS_AUTH -l 1080 $SS_ARGS
+    polipo:
+        image: jinnlynn/polipo:armhf
+        restart: always
+        networks:
+            - freegate
+        depends_on:
+            - socks5
+        ports:
+            - 9580:8123
+            - 9580:8123/udp
+        command: polipo proxyAddress=0.0.0.0 socksProxyType=socks5 socksParentProxy=172.16.10.12:1080
+networks:
+    freegate:
+        driver: bridge
+        ipam:
+            config:
+                - subnet: 172.16.10.0/24

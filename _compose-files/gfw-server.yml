@@ -1,0 +1,73 @@
+# 翻墙 服务器端
+# ss:   shadowsocks-libev 最新版本
+# ssk:  kuptun 转发ss
+# ss2:  shadowsocks-libev 2.5.6 开启OTA
+# ss2k: kcptun 转发ss2
+# vpn:  L2TP IPSec VPN
+version: "3"
+services:
+    ss:
+        image: jinnlynn/shadowsocks
+        restart: always
+        networks:
+            freegate:
+                ipv4_address: 172.16.10.11
+        environment:
+            - SS_PWD
+            - SS_METHOD
+        ports:
+            - 57700:8388
+            - 57700:8388/udp
+    ssk:
+        image: jinnlynn/kcptun
+        restart: always
+        networks:
+            - freegate
+        depends_on:
+            - ss
+        ports:
+            - 55800:29900/udp
+        command: server_linux_amd64 --target 172.16.10.11:8388 $KCPTUN_ARGS
+    ss2:
+        image: jinnlynn/shadowsocks:2.5.6
+        restart: always
+        networks:
+            freegate:
+                ipv4_address: 172.16.10.12
+        environment:
+            - SS_PWD
+            - SS_METHOD
+        ports:
+            - 57701:8388
+            - 57701:8388/udp
+    ss2k:
+        image: jinnlynn/kcptun
+        restart: always
+        networks:
+            - freegate
+        depends_on:
+            - ss2
+        ports:
+            - 55801:29900/udp
+        command: server_linux_amd64 --target 172.16.10.12:8388 $KCPTUN_ARGS
+    vpn:
+        image: hwdsl2/ipsec-vpn-server
+        restart: always
+        privileged: true
+        networks:
+            - freegate
+        environment: 
+            - VPN_USER
+            - VPN_PASSWORD
+            - VPN_IPSEC_PSK
+        ports:
+            - 500:500/udp
+            - 4500:4500/udp
+        volumes:
+            - /lib/modules:/lib/modules:ro
+networks:
+    freegate:
+        driver: bridge
+        ipam:
+            config:
+                - subnet: 172.16.10.0/24
