@@ -40,6 +40,7 @@ services:
         restart: always
         ports:
             - 6800:6800
+            - 5580:5580
         volumes:
             - ${KITS}/etc/nginx/default.conf:/etc/nginx/conf.d/default.conf
             - ${KITS_LOCAL}/dehydrated/certs:/etc/nginx/certs

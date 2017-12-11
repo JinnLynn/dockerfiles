@@ -12,10 +12,11 @@ RUN set -ex && \
     tar --extract \
         --file docker.tgz \
         --strip-components 1 \
-        --directory /usr/local/bin/ && \
+        --directory /app/bin/ && \
     apk del --no-cache curl tar && \
     rm -rf /tmp/*
 
 # 运行时需挂载 /var/run/docker.sock
+ENTRYPOINT ["docker"]
 
-CMD docker version
+CMD ["version"]

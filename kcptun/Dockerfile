@@ -8,7 +8,7 @@ ARG KCPTUN_URL=https://github.com/xtaci/kcptun/releases/download/v$KCPTUN_VER/$K
 
 RUN set -ex && \
     apk add --no-cache curl && \
-    curl -SL $KCPTUN_URL | tar xz -C /usr/local/bin && \
+    curl -SL $KCPTUN_URL | tar xz -C /app/bin && \
     apk del --no-cache curl
 
 CMD ["server_linux_amd64", "--help"]

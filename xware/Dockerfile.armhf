@@ -15,4 +15,4 @@ RUN set -ex && \
 
 VOLUME /app/run
 
-CMD /app/bin/entrypoint
+CMD ["entrypoint"]

@@ -9,4 +9,4 @@ VOLUME /app/run
 
 EXPOSE 6800
 
-CMD aria2c --help
+CMD ["aria2c", "--help"]

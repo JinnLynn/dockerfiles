@@ -10,4 +10,4 @@ COPY deps/docker.conf /etc/php7/php-fpm.d/99-docker.conf
 
 EXPOSE 9000
 
-CMD php-fpm7
+CMD ["php-fpm7"]

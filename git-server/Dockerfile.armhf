@@ -13,6 +13,6 @@ WORKDIR /app/local
 
 EXPOSE 22
 
-ENTRYPOINT ["/app/bin/entrypoint"]
+ENTRYPOINT ["entrypoint"]
 
 CMD ["/usr/sbin/sshd","-D"]

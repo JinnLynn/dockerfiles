@@ -9,4 +9,6 @@ RUN set -ex && \
     pip install --no-cache-dir $PKG && \
     rm -rf /tmp/*
 
-CMD genpac -h
+ENTRYPOINT ["genpac"]
+
+CMD ["-h"]

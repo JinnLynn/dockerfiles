@@ -12,16 +12,16 @@ ENV SS_METHOD   aes-256-cfb
 ENV SS_ARGS     -t 30 -d 8.8.8.8 --fast-open -u -A -v
 
 RUN set -ex && \
-    apk add --no-cache --virtual .build-deps \
-                                curl \
-                                tar \
-                                build-base \
-                                autoconf \
-                                libtool \
-                                linux-headers \
-                                openssl-dev \
-                                pcre-dev && \
     cd /tmp && \
+    apk update && \
+    apk add --virtual .build-deps \
+                    curl \
+                    tar \
+                    build-base \
+                    autoconf \
+                    linux-headers \
+                    openssl-dev \
+                    pcre-dev && \
     curl -SL $SS_URL | tar xz --strip 1 && \
     ./configure --prefix=/usr --disable-documentation && \
     make install && \
@@ -32,9 +32,9 @@ RUN set -ex && \
             | xargs -r apk info --installed \
             | sort -u \
     )" && \
-    apk add --no-cache --virtual .run-deps $runDeps && \
-    apk del --no-cache .build-deps && \
-    rm -rf /tmp/*
+    apk add --virtual .run-deps $runDeps && \
+    apk del .build-deps && \
+    rm -rf /tmp/* /var/cache/apk/*
 
 EXPOSE $SS_PORT/tcp $SS_PORT/udp
 

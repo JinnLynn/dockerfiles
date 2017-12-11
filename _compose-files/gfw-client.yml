@@ -62,7 +62,7 @@ services:
         ports:
             - 9580:8123
             - 9580:8123/udp
-        command: polipo proxyAddress=0.0.0.0 socksProxyType=socks5 socksParentProxy=172.16.10.12:1080
+        command: ["socksProxyType=socks5", "socksParentProxy=172.16.10.12:1080"]
 networks:
     freegate:
         driver: bridge

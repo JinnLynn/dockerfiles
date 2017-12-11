@@ -13,18 +13,18 @@ ENV SS_ARGS     -t 30 -d 8.8.8.8 --fast-open -u -v
 
 RUN set -ex && \
     cd /tmp && \
-    apk add --no-cache --virtual .build-deps \
-                                curl \
-                                tar \
-                                build-base \
-                                autoconf \
-                                libtool \
-                                linux-headers \
-                                libev-dev \
-                                libsodium-dev \
-                                mbedtls-dev \
-                                pcre-dev \
-                                c-ares-dev && \
+    apk update && \
+    apk add --virtual .build-deps \
+                    curl \
+                    tar \
+                    build-base \
+                    autoconf \
+                    linux-headers \
+                    libev-dev \
+                    libsodium-dev \
+                    mbedtls-dev \
+                    pcre-dev \
+                    c-ares-dev && \
     curl -SL $SS_URL | tar xz --strip 1 && \
     ./configure --prefix=/usr --disable-documentation && \
     make install && \
@@ -35,8 +35,8 @@ RUN set -ex && \
             | xargs -r apk info --installed \
             | sort -u \
     )" && \
-    apk add --no-cache --virtual .run-deps $runDeps && \
-    apk del --no-cache .build-deps && \
+    apk add --virtual .run-deps $runDeps && \
+    apk del .build-deps && \
     rm -rf /tmp/* /var/cache/apk/*
 
 EXPOSE $SS_PORT/tcp $SS_PORT/udp

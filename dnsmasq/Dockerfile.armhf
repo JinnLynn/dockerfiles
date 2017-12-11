@@ -12,6 +12,6 @@ COPY entrypoint.sh /app/bin/entrypoint
 
 EXPOSE 53 53/udp 67/udp
 
-ENTRYPOINT ["/app/bin/entrypoint"]
+ENTRYPOINT ["entrypoint"]
 
 CMD ["dnsmasq", "-k", "--user=root", "--log-facility=-", "--conf-dir=/app/etc,*.conf"]
