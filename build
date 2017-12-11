@@ -1,6 +1,9 @@
 #!/bin/bash
 
+# 默认docker user
 USER=${DOCKER_USER:-}
+[[ -z "$USER" ]] && USER=$(docker info 2>/dev/null | grep Username | awk '{print $2}')
+
 PUSH=false
 VERBOSE=false
 FORCE_BUILD=false
