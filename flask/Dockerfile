@@ -1,6 +1,6 @@
 FROM jinnlynn/python
 
-MAINTAINER JinnLynn <eatfishlin@gmail.com>
+LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
 RUN set -ex && \
     apk add --no-cache build-base linux-headers python-dev && \

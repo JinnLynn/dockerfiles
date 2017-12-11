@@ -1,6 +1,6 @@
 FROM jinnlynn/python
 
-MAINTAINER "JinnLynn <eatfishlin@gmail.com>"
+LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
 ARG PKG=https://github.com/JinnLynn/genpac/archive/master.zip
 

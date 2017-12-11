@@ -1,6 +1,6 @@
 FROM jinnlynn/alpine
 
-MAINTAINER JinnLynn <eatfishlin@gmail.com>
+LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
 ARG URI=https://github.com/ziahamza/webui-aria2/archive/master.zip
 

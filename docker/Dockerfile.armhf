@@ -1,6 +1,6 @@
 FROM jinnlynn/alpine:armhf
 
-MAINTAINER "JinnLynn <eatfishlin@gmail.com>"
+LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
 ARG DOCKER_VERSION=17.09.0
 ARG DOCKER_BIN_URI=https://mirrors.ustc.edu.cn/docker-ce/linux/static/stable/armhf/docker-$DOCKER_VERSION-ce.tgz

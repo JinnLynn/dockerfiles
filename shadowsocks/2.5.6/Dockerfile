@@ -1,6 +1,6 @@
 FROM jinnlynn/alpine
 
-MAINTAINER JinnLynn <eatfishlin@gmail.com>
+LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
 ARG SS_VER=2.5.6
 ARG SS_URL="https://github.com/shadowsocks/shadowsocks-libev/archive/v$SS_VER.tar.gz"

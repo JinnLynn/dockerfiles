@@ -1,6 +1,6 @@
 FROM jinnlynn/alpine:armhf
 
-MAINTAINER JinnLynn <eatfishlin@gmail.com>
+LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
 ARG KCPTUN_VER=20171021
 ARG KCPTUN_FILE=kcptun-linux-arm-$KCPTUN_VER.tar.gz

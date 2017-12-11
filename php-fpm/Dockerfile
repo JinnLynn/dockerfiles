@@ -1,6 +1,6 @@
 FROM jinnlynn/alpine
 
-MAINTAINER JinnLynn <eatfishlin@gmail.com>
+LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
 RUN set -ex && \
     apk add --no-cache php7-fpm php7-gd php7-mysqli php7-zlib && \

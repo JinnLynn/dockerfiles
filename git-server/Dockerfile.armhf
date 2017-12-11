@@ -1,6 +1,6 @@
 FROM jinnlynn/alpine:armhf
 
-MAINTAINER "JinnLynn <eatfishlin@gmail.com>"
+LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
 RUN set -ex && \
     apk add --no-cache openssh git && \

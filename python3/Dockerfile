@@ -1,6 +1,6 @@
 FROM jinnlynn/alpine
 
-MAINTAINER JinnLynn <eatfishlin@gmail.com>
+LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
 ARG MIRROR="https://mirrors.ustc.edu.cn/pypi/web/simple"
 

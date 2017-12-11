@@ -1,6 +1,6 @@
 FROM jinnlynn/alpine:armhf
 
-MAINTAINER JinnLynn <eatfishlin@gmail.com>
+LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
 ENV REDIR_SET GFWLIST
 ENV REDIR_PORT 9528

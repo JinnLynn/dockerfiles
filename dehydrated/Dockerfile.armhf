@@ -1,6 +1,6 @@
 FROM jinnlynn/alpine:armhf
 
-MAINTAINER JinnLynn <eatfishlin@gmail.com>
+LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
 ARG RAW_URL=https://github.com/lukas2511/dehydrated/raw/master/dehydrated
 

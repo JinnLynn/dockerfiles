@@ -1,6 +1,6 @@
 FROM jinnlynn/python:armhf
 
-MAINTAINER JinnLynn <eatfishlin@gmail.com>
+LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
 ARG VER=1.17.1
 ARG URL=https://github.com/docker/compose/archive/$VER.tar.gz
