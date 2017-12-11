@@ -73,8 +73,8 @@ arch_mark() {
 is_ignored() {
     local type=$1
     local image=$2
-    local tag=$3
-    cat $BASE_DIR/.buildignore 2>/dev/null | grep -q -e "^$type,$image\$" -e "^$type,$tag\$"
+    local suite=$3
+    cat $BASE_DIR/.buildignore 2>/dev/null | grep -q -e "^$type,$image\$" -e "^$type,$image:$suite\$"
 }
 
 is_build_ignored() {
@@ -123,7 +123,7 @@ build() {
         echo_green $(echo_split)
     fi
 
-    if ! is_true $SPECIFIED && is_build_ignored $image $tag; then
+    if ! is_true $SPECIFIED && is_build_ignored $image $suite; then
         echo_red $(echo_split "Build $tag ignored.")
     else
         local build_opt=
