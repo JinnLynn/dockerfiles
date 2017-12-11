@@ -8,6 +8,7 @@ DRY_RUN=false
 
 BASE_DIR=$(realpath $(dirname $0))
 ARCH=
+SPECIFIED=false
 
 echo_red() {
     echo -e "\033[31m$@\033[0m"
@@ -119,7 +120,7 @@ build() {
         echo_green $(echo_split)
     fi
 
-    if is_build_ignored $image $tag; then
+    if ! is_true $SPECIFIED && is_build_ignored $image $tag; then
         echo_red $(echo_split "Build $tag ignored.")
     else
         local build_opt=
@@ -142,7 +143,7 @@ push() {
     local suite=$2
     local tag="$image:$suite"
 
-    if is_push_ignored $image $tag; then
+    if ! is_true $SPECIFIED && is_push_ignored $image $tag; then
         echo_red $(echo_split "Push $tag ignored.")
         return 0
     fi
@@ -171,29 +172,35 @@ detect_dockerfile() {
     echo $df
 }
 
-build_all () {
-    local dockerfile=$(detect_dockerfile)
+build_all() {
     IFS=$'\n'
-    files=$(find . -maxdepth 3 ! -ipath '.\/[~\._]*' -iname $dockerfile | sed 's|./||' | sort)
+    files=$(find . -maxdepth 3 ! -ipath '.\/[~\._]*' -iname $(detect_dockerfile) | sed 's|./||' | sort)
     unset IFS
 
-    cur=$(pwd)
     for f in ${files[@]}; do
-        cd $cur
         build "$f"
     done
 }
 
 build_single() {
-    local dockerfile=$(detect_dockerfile "$1")
-
-    [[ ! -f "$dockerfile" ]] && {
-        echo_red $(echo_split "$1[$dockerfile] missing")
+    local single=$1
+    [[ ! -e "$single" ]] && {
+        echo_red $(echo_split "$single missing")
         echo
         return 1
     }
 
-    build "$dockerfile"
+    local files=
+    [[ -f "$single" ]] && files=($single) || {
+        single=${single%/}
+        IFS=$'\n'
+        files=$(find "$single" -maxdepth 2 ! -ipath '.\/[~\._]*' -iname $(detect_dockerfile) | sort)
+        unset IFS
+    }
+
+    for f in ${files[@]}; do
+        build "$f"
+    done
 }
 
 # 检查参数值
@@ -276,9 +283,8 @@ is_true $VERBOSE && {
 if [[ $# -eq 0 ]]; then
     build_all
 else
-    cur=$(pwd)
+    SPECIFIED=true
     while [[ $# -gt 0 ]]; do
-        cd $cur
         build_single $1
         shift $(( $# > 0 ? 1 : 0 ))
     done
