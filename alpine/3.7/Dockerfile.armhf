@@ -1,0 +1,14 @@
+FROM scratch
+
+LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
+
+ENV PATH=/app/bin:$PATH
+
+ADD rootfs-armhf.tar.xz /
+COPY init-armhf /tmp/init
+
+RUN set -ex && \
+    /tmp/init && \
+    rm -rf /tmp/*
+
+CMD ["/bin/sh"]
