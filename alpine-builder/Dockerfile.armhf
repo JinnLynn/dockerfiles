@@ -1,0 +1,13 @@
+FROM jinnlynn/alpine:armhf
+
+LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
+
+ENV ALPINE_OUTPUT=/app/local
+
+RUN set -ex && \
+    apk add --no-cache bash curl
+
+COPY Dockerfile.tpl init.tpl /app/etc/
+COPY mkrootfs.sh /app/bin/entrypoint
+
+ENTRYPOINT ["entrypoint"]
