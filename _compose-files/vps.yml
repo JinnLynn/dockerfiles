@@ -1,5 +1,6 @@
 # 服务器上运行的服务
 # 翻墙(shadowsocks vpn): gfw-server.yml 同时加载即可
+# 网页: web.yml
 # 其它服务
 # 流量     web    ssh加速
 # vnstat  nginx  ssh-kcp
@@ -18,17 +19,6 @@ services:
         network_mode: host
         volumes:
             - /var/lib/vnstat:/var/lib/vnstat
-    nginx:
-        image: jinnlynn/nginx
-        restart: always
-        ports:
-            - 80:80
-            - 443:443
-        volumes:
-            - ${KITS}/etc/nginx/conf.d:/etc/nginx/conf.d
-            - ${KITS}/etc/nginx/certs:/etc/nginx/certs
-            - ${KITS}/etc/nginx/sites-enabled:/etc/nginx/sites-enabled
-            - ${KITS}/share/www:/var/www
 networks:
     default:
         driver: bridge

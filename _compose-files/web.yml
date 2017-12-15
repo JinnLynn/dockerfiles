@@ -1,0 +1,35 @@
+version: "3"
+services:
+    nginx:
+        image: jinnlynn/nginx
+        restart: always
+        ports:
+            - 80:80
+            - 443:443
+        volumes:
+            - ${KITS}/etc/nginx/conf.d:/etc/nginx/conf.d
+            - ${KITS}/etc/nginx/certs:/etc/nginx/certs
+            - ${KITS}/etc/nginx/sites-enabled:/etc/nginx/sites-enabled
+            - ${KITS}/etc/nginx/snippets:/etc/nginx/snippets
+            - ${KITS}/share/www:/var/www
+    genpac:
+        image: jinnlynn/genpac-server:dev
+        restart: always
+        networks:
+            default:
+                ipv4_address: 172.16.0.21
+        environment:
+            GENPAC_CONFIG: /app/etc/config.ini
+        volumes:
+            - ${KITS}/share/genpac:/app/opt/genpac
+            - ${KITS}/share/genpac-server:/app/opt/genpac-server
+            - ${KITS}/etc/genpac:/app/etc
+            - ${KITS_VAR}/local/genpac:/app/local
+    aria2-webui:
+        image: jinnlynn/aria2-webui
+        restart: always
+        networks:
+            default:
+                ipv4_address: 172.16.0.22
+        volumes:
+            - ${KITS}/etc/aria2-webui/configuration.js:/app/opt/aria2-webui/configuration.js
