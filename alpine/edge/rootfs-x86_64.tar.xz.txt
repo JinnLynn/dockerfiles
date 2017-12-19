@@ -1,4 +1,4 @@
 current_version=3.7.0
 current_build="2017-11-30 21:50:31"
 current_sha256=f6d95e15b9df1b18a29ce713ab1bfc6837676831d4fa18bec2f8e289332f77a0
-download_time="2017-12-11 13:40:36"
+download_time="2017-12-19 15:17:32"

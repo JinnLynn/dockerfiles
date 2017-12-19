@@ -1,4 +1,4 @@
 current_version=3.6.2
 current_build="2017-06-17 09:47:35"
 current_sha256=14f62c60adf26996df8a5882604914f655920003f47d3a135e263cb31ce7cfe7
-download_time="2017-12-11 13:40:27"
+download_time="2017-12-19 15:17:20"

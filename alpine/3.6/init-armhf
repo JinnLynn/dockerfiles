@@ -1,11 +1,11 @@
 #!/bin/sh
-set -ex
+set -e
 
 BRANCH="v3.6"
 VERSION="3.6.2"
-MIRROR="https://mirrors.ustc.edu.cn/alpine"
-TIMEZONE="Asia/Shanghai"
-APP_DIRS="bin etc opt tmp run log cache local"
+MIRROR="${MIRROR:-https://mirrors.ustc.edu.cn/alpine}"
+TIMEZONE="${TIMEZONE-Asia/Shanghai}"
+APP_DIRS="bin etc opt local log run tmp var"
 
 if [ "$MIRROR" ]; then
     {

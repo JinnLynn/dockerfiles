@@ -2,6 +2,8 @@ FROM scratch
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
+ARG MIRROR
+ARG TIMEZONE
 ENV PATH=/app/bin:$PATH
 
 ADD rootfs-armhf.tar.xz /
