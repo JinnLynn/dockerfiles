@@ -51,11 +51,11 @@ services:
             - "5448:22" # 双引号去掉会出错, WHY
         volumes:
             - /cellar/mnt/repo/git:/app/local
+            - ${KITS}/etc/docker/jkey.pub:/app/etc/jkey.pub
             - /etc/ssh/ssh_host_dsa_key:/etc/ssh/ssh_host_dsa_key
             - /etc/ssh/ssh_host_ecdsa_key:/etc/ssh/ssh_host_ecdsa_key
             - /etc/ssh/ssh_host_ed25519_key:/etc/ssh/ssh_host_ed25519_key
             - /etc/ssh/ssh_host_rsa_key:/etc/ssh/ssh_host_rsa_key
-            - ${KITS}/etc/docker/jkey.pub:/app/etc/jkey.pub
     minidlna:
         image: jinnlynn/minidlna:armhf
         restart: always
@@ -64,12 +64,13 @@ services:
             - /cellar/mnt/media:/app/opt/media
             - ${KITS_LOCAL}/minidlna:/app/local
             - ${KITS}/var/log:/app/log
-    # xware:
-    #     image: jinnlynn/xware:armhf
-    #     restart: unless-stopped
-    #     volumes:
-    #         - /cellar/docker/xware:/app/run
-    #         - /cellar/mnt/download/thunder:/app/local
+    bypy:
+        image: jinnlynn/bypy:armhf
+        restart: always
+        volumes:
+            - ${KITS_LOCAL}/bypy:/root/.bypy
+            - /cellar/mnt/media:/app/opt/nas-media
+            - /cellar/mnt/documents/Shared/Software:/app/opt/nas-apps
 volumes:
     vdata:
 networks:
