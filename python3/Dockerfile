@@ -9,7 +9,5 @@ RUN set -ex && \
     mkdir -p /root/.pip && \
     echo -e "[global]\nindex-url = $MIRROR" >/root/.pip/pip.conf
 
-ENTRYPOINT ["python3"]
-
-CMD ["--version"]
+CMD ["python3", "--version"]
 
