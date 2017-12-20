@@ -24,12 +24,10 @@ services:
             - ${KITS}/share/genpac:/app/opt/genpac
             - ${KITS}/share/genpac-server:/app/opt/genpac-server
             - ${KITS}/etc/genpac:/app/etc
-            - ${KITS_VAR}/local/genpac:/app/local
-    aria2-webui:
-        image: jinnlynn/aria2-webui
+            - ${KITS_VAR}/local/genpac:/app/var/local
+    ariang:
+        image: jinnlynn/ariang
         restart: always
         networks:
             default:
                 ipv4_address: 172.16.0.22
-        volumes:
-            - ${KITS}/etc/aria2-webui/configuration.js:/app/opt/aria2-webui/configuration.js
