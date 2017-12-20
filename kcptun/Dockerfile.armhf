@@ -2,7 +2,7 @@ FROM jinnlynn/alpine:armhf
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
-ARG KCPTUN_VER=20171021
+ARG KCPTUN_VER=20171201
 ARG KCPTUN_FILE=kcptun-linux-arm-$KCPTUN_VER.tar.gz
 ARG KCPTUN_URL=https://github.com/xtaci/kcptun/releases/download/v$KCPTUN_VER/$KCPTUN_FILE
 
