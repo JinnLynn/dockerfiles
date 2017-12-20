@@ -1,0 +1,16 @@
+FROM jinnlynn/python:armhf
+
+LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
+
+ENV LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 LANGUAGE=en_US.UTF-8
+
+RUN set -ex && \
+    apk update && \
+    apk add --virtual .build-deps gcc python-dev musl-dev && \
+    pip install bypy && \
+    apk del .build-deps && \
+    rm -rf /var/cache/apk/*
+
+COPY entrypoint.sh /app/bin/entrypoint
+
+ENTRYPOINT ["entrypoint"]
