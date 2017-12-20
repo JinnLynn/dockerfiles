@@ -3,14 +3,16 @@ FROM jinnlynn/python
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
 RUN set -ex && \
-    apk add --no-cache build-base linux-headers python-dev && \
+    apk update && \
+    apk add --virtual .build-deps build-base linux-headers python-dev && \
     pip install --no-cache-dir flask uwsgi && \
-    apk del --no-cache build-base linux-headers python-dev
+    apk del .build-deps && \
+    rm -rf /var/cache/apk/*
 
-ADD ./app.py /app/app.py
+COPY app.py /app/opt/app.py
 
-WORKDIR /app
+WORKDIR /app/opt
 
 EXPOSE 8000 9000 9000/udp
 
-CMD uwsgi --http 0.0.0.0:8000 --socket 0.0.0.0:9000 --module app:app
+CMD ["uwsgi", "--http", "0.0.0.0:8000", "--socket", "0.0.0.0:9000", "--module", "app:app"]
