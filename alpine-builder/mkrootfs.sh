@@ -2,7 +2,7 @@
 set -e
 
 ALPINE_RELEASE=${ALPINE_RELEASE:-edge}
-ALPINE_AECH=${ALPINE_AECH:-x86_64 armhf}
+ALPINE_ARCH=${ALPINE_ARCH:-x86_64 armhf}
 ALPINE_MIRROR=${ALPINE_MIRROR:-https://mirrors.ustc.edu.cn/alpine/}
 ALPINE_LATEST=${ALPINE_LATEST:-}
 ALPINE_OUTPUT=${ALPINE_OUTPUT:-}
@@ -11,6 +11,7 @@ BASE_DIR=$(realpath $(dirname $0))
 TPL_DIR=${TPL_DIR:-/app/etc}
 
 VALID_ARCH=(aarch64 armhf ppc64le s390x x86 x86_64)
+APP_DIRS="bin etc opt local log run tmp var"
 
 echo_err() {
     echo -e "\033[31m$@\033[0m" >&2
@@ -121,9 +122,9 @@ build() {
         sed -i"" "s/__TIMEZONE__/${TIMEZONE//\//\\/}/g" $init_script_file
         app_dirs=""
         if is_true $MAKE_APP_DIRS; then
-            app_dirs="bin etc opt tmp run log cache local"
+            app_dirs="$APP_DIRS"
         fi
-        sed -i"" "s/__APP_DIRS__/$app_dirs/g" $init_script_file
+        sed -i"" "s/__APP_DIRS__/${app_dirs//\//\\/}/g" $init_script_file
         chmod +x $init_script_file
 
         # generate dockerfile
@@ -219,7 +220,7 @@ if [[ -n "$LATEST" ]]; then
     echo "${RELEASE[@]}" | grep -q "$LATEST" || RELEASE="$RELEASE $LATEST"
 fi
 
-ARCH=${ARCH:-x86_64 armhf}
+ARCH=${ALPINE_ARCH:-x86_64 armhf}
 ARCH=($ARCH)
 
 main() {

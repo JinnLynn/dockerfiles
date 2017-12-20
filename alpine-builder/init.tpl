@@ -3,8 +3,8 @@ set -e
 
 BRANCH="__BRANCH__"
 VERSION="__VERSION__"
-MIRROR="__MIRROR__"
-TIMEZONE="__TIMEZONE__"
+MIRROR="${MIRROR:-https://mirrors.ustc.edu.cn/alpine}"
+TIMEZONE="${TIMEZONE-Asia/Shanghai}"
 APP_DIRS="__APP_DIRS__"
 
 if [ "$MIRROR" ]; then
