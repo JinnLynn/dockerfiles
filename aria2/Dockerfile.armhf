@@ -5,9 +5,8 @@ LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 RUN set -ex && \
     apk add --no-cache aria2
 
-VOLUME /app/run
+COPY entrypoint.sh /app/bin/entrypoint
 
 EXPOSE 6800
 
-CMD [ ! -f /app/run/aria2.session ] && touch /app/run/aria2.session || true && \
-    aria2c --conf-path=/app/etc/aria2.conf
+ENTRYPOINT ["entrypoint"]

@@ -5,8 +5,8 @@ LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 RUN set -ex && \
     apk add --no-cache aria2
 
-VOLUME /app/run
+COPY entrypoint.sh /app/bin/entrypoint
 
 EXPOSE 6800
 
-CMD ["aria2c", "--help"]
+ENTRYPOINT ["entrypoint"]
