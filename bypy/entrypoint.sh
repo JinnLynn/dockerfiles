@@ -1,12 +1,14 @@
 #!/usr/bin/env sh
 INTERVAL=${BYPY_INTERVAL:-6h}
-SYNCDIR=${BYPY_SYNCDIR:-/app/opt}
+SYNCDIR=${BYPY_SYNCDIR:-/app/mnt}
 
 PROCESSES=${BYPY_PROCESSES:-1}
 DELETE_REMOTE=${BYPY_DELETE_REMOTE-true}
 DEBUG="$BYPY_DEBUG"
 # 同步目录最小大小，只有大于该值才同步，防止挂载失败
 SYNCDIR_MIN_SIZE=${BYPY_SYNCDIR_MIN_SIZE:-1024}
+
+is_trap_sync=
 
 echo_line() {
     echo "========================================"
@@ -19,6 +21,14 @@ log() {
 log_line() {
     log $@
     echo_line
+}
+
+backup() {
+    local bak_dir="/root/.bypy/bak/$(date +%Y%m%d%H%M%S)"
+    mkdir -p $bak_dir
+    cp /root/.bypy/*.* $bak_dir/
+    # 删除久的备份
+    find $(dirname $bak_dir) -maxdepth 1 -mindepth 1 -type d -mtime +2 -exec rm -rf {} \;
 }
 
 pre_sync() {
@@ -39,28 +49,9 @@ post_sync() {
     echo
 }
 
-backup() {
-    local bak_dir="/root/.bypy/bak/$(date +%Y%m%d%H%M%S)"
-    mkdir -p $bak_dir
-    cp /root/.bypy/*.* $bak_dir/
-}
+sync() {
+    cd $SYNCDIR
 
-
-echo "SYNCDIR: $SYNCDIR"
-echo "INTERVAL: $INTERVAL"
-echo "PROCESSES: $PROCESSES"
-echo "DELETE_REMOTE: $DELETE_REMOTE"
-echo "SYNCDIR_MIN_SIZE: ${SYNCDIR_MIN_SIZE}"
-echo "DEBUG: $DEBUG"
-
-if [ ! -d "$SYNCDIR" ]; then
-    echo_line
-    log "ERROR: $SYNCDIR is not a directory." 2>&1
-    exit 1
-fi
-
-cd $SYNCDIR
-while [ true ]; do
     opts="-vvvv"
     [ -n "$DEBUG" ] && opts="$opts -d"
     [ "$PROCESSES" -ge 2 ] && opts="$opts --processes $PROCESSES"
@@ -91,6 +82,40 @@ while [ true ]; do
     done
 
     post_sync
+}
 
-    sleep $INTERVAL
+trap_sync() {
+    echo_line
+    log "trap sync signal..."
+    echo_line
+    echo
+    is_trap_sync=true
+    sync
+}
+
+echo "SYNCDIR: $SYNCDIR"
+echo "INTERVAL: $INTERVAL"
+echo "PROCESSES: $PROCESSES"
+echo "DELETE_REMOTE: $DELETE_REMOTE"
+echo "SYNCDIR_MIN_SIZE: ${SYNCDIR_MIN_SIZE}"
+echo "DEBUG: $DEBUG"
+
+if [ ! -d "$SYNCDIR" ]; then
+    echo_line
+    log "ERROR: $SYNCDIR is not a directory." 2>&1
+    exit 1
+fi
+
+# sync 信号
+trap trap_sync 60
+
+while :; do
+    if [ "$is_trap_sync" != "true" ]; then
+        sync
+    fi
+    is_trap_sync=
+    sleep $INTERVAL &
+    pid=$!
+    wait $pid
+    kill -9 $pid 1>/dev/null 2>&1
 done
