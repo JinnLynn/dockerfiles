@@ -60,17 +60,18 @@ services:
         image: jinnlynn/minidlna:armhf
         restart: always
         network_mode: host
+        environment:
+            MINIDLNA_WATCH_INTERVAL: 6h
         volumes:
-            - /cellar/mnt/media:/app/opt/media
             - ${KITS_LOCAL}/minidlna:/app/local
-            - ${KITS}/var/log:/app/log
+            - /cellar/mnt/media:/app/mnt/media
     bypy:
         image: jinnlynn/bypy:armhf
         restart: always
         volumes:
             - ${KITS_LOCAL}/bypy:/root/.bypy
-            - /cellar/mnt/media:/app/opt/nas-media
-            - /cellar/mnt/documents/Shared/Software:/app/opt/nas-apps
+            - /cellar/mnt/media:/app/mnt/nas-media
+            - /cellar/mnt/documents/Shared/Software:/app/mnt/nas-apps
 volumes:
     vdata:
 networks:
