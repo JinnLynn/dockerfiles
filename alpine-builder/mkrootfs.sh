@@ -11,7 +11,7 @@ BASE_DIR=$(realpath $(dirname $0))
 TPL_DIR=${TPL_DIR:-/app/etc}
 
 VALID_ARCH=(aarch64 armhf ppc64le s390x x86 x86_64)
-APP_DIRS="bin etc opt local log run tmp var"
+APP_DIRS="bin etc opt mnt local log run tmp var"
 
 echo_err() {
     echo -e "\033[31m$@\033[0m" >&2
@@ -230,6 +230,7 @@ main() {
     echo "MIRROR:   $MIRROR"
     echo "TIMEZONE: $TIMEZONE"
     echo "MK_DIRS:  $MAKE_APP_DIRS"
+    is_true $MAKE_APP_DIRS && echo "APP_DIRS: $APP_DIRS"
     echo "FORCE:    $FORCE"
     echo "OUTPUT:   $OUTPUT"
     echo "===== ====="
