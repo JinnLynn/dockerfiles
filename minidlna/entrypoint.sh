@@ -71,7 +71,7 @@ echo "WATCH_ENABLE: $watch_enable"
 echo "WATCH_INTERVAL: $watch_interval"
 
 # rescan 信号
-trap trap_rescan 60
+trap trap_rescan SIGUSR1
 
 log "MiniDLNA will start..."
 # 获取当前hash

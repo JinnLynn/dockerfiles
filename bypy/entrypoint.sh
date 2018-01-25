@@ -40,7 +40,6 @@ pre_sync() {
 }
 
 post_sync() {
-    backup
     echo
     echo_line
     bypy info
@@ -107,7 +106,7 @@ if [ ! -d "$SYNCDIR" ]; then
 fi
 
 # sync 信号
-trap trap_sync 60
+trap trap_sync SIGUSR1
 
 while :; do
     if [ "$is_trap_sync" != "true" ]; then
