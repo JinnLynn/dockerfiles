@@ -1,0 +1,156 @@
+#!/bin/bash
+
+ALPINE_VERSION=${ALPINE_VERSION:-edge}
+ALPINE_ARCH=${ALPINE_ARCH:-x86_64 armhf}
+# ALPINE_LATEST 允许为空
+ALPINE_LATEST=${ALPINE_LATEST-}
+
+DRY_RUN=false
+PUSH=false
+FORCE_BUILD=false
+USER=${DOCKER_USER:-}
+[[ -z "$USER" ]] && USER=$(docker info 2>/dev/null | grep Username | awk '{print $2}')
+
+# 如果latest不在release中 添加
+if [[ -n "$ALPINE_LATEST" ]]; then
+    ALPINE_LATEST=${ALPINE_LATEST#v}
+    echo "${ALPINE_VERSION[@]}" | grep -q "$ALPINE_LATEST" || ALPINE_VERSION="$ALPINE_VERSION $ALPINE_LATEST"
+fi
+
+
+DOCKERFILE=$(dirname $0)/alpine/_Dockerfile
+[[ $(uname -m | cut -c 1-3) == arm ]] && DOCKERFILE="$DOCKERFILE.armhf"
+
+TAG_BASE="alpine"
+
+echo_red() {
+    echo -e "\033[31m$@\033[0m"
+}
+
+echo_green() {
+    echo -e "\033[32m$@\033[0m"
+}
+
+echo_split() {
+    local start=
+    if [[ -n "$@" ]]; then
+        echo "================================================="
+        echo "\n$@"
+        start="\n"
+    fi
+    echo "$start================================================="
+}
+
+is_true() {
+    [[ -z "$1" || "$1" == "false" ]] && return 1 || return 0
+}
+
+run_cmd() {
+    is_true $DRY_RUN && echo "$@" && return 0
+    $@
+}
+
+# $1 alpine version
+# $2 arch
+build() {
+    local ver=$1
+    local arch=$2
+    ver=${ver#v}
+
+    local branch=$ver
+    [[ $branch != "edge" && $branch != "latest-stable" ]] && branch="v$ver"
+
+    echo_green $(echo_split "Build Alpine $branch $arch")
+
+    local suite=$ver
+    [[ $arch != "x86_64" ]] && suite="$arch-$ver"
+
+    local cur_tag=$TAG_BASE:$suite
+
+    local build_opt=
+    is_true $FORCE_BUILD && build_opt="$build_opt --no-cache"
+
+    run_cmd docker build --rm --force-rm --network=host $build_opt \
+            --build-arg BRANCH=$branch --build-arg ARCH=$arch \
+            -t $cur_tag -f $DOCKERFILE $(dirname $DOCKERFILE)
+    push $cur_tag
+
+    [[ "$ver" == "$ALPINE_LATEST" ]] && {
+        local latest_tag="$TAG_BASE"
+        [[ $arch != "x86_64" ]] && latest_tag="$latest_tag:$arch"
+        run_cmd docker tag $cur_tag $latest_tag
+        push $latest_tag
+    }
+}
+
+# $1 tag
+push() {
+    ! is_true $PUSH && return 1
+
+    local tag=$1
+
+    echo_green $(echo_split "Pushing $tag")
+    local n=0
+    local pushed=
+    until [ $n -ge 5 ]; do
+        run_cmd docker push $tag && {
+            echo_green $(echo_split "Successfully push $tag")
+            pushed=1
+            break
+        }
+        echo "Try #$n failed... sleeping for 5 seconds"
+        n=$[$n+1]
+        sleep 5
+    done
+    [[ -z "$pushed" ]] && echo_red $(echo_split "Push $tag fail.")
+}
+
+
+
+while (( ${#} )); do
+    case "$1" in
+        --user|-u )
+            shift 1
+            USER=${1:-}
+            # 允许USER为空
+            check_param "--user|-u" $USER true
+            ;;
+        --push|-p )
+            PUSH=true
+            ;;
+        --force|-f )
+            FORCE_BUILD=true
+            ;;
+        --dry-run|-d)
+            DRY_RUN=true
+            ;;
+        -* )
+            exit_err "错误的选项: $1"
+            ;;
+        * )
+            # 参数结束
+            break
+            ;;
+    esac
+    shift 1
+done
+
+[[ -n "$USER" ]] && TAG_BASE="$USER/$TAG_BASE"
+
+echo
+echo "VERSION:     $ALPINE_VERSION"
+echo "ARCH:        $ALPINE_ARCH"
+echo "LATEST:      $ALPINE_LATEST"
+echo "USER:        $USER"
+echo "PUSH:        $PUSH"
+echo "FORCE_BUILD: $FORCE_BUILD"
+echo "DRY_RUN:     $DRY_RUN"
+echo
+
+for ver in $ALPINE_VERSION; do
+    for arch in $ALPINE_ARCH; do
+        build $ver $arch
+        echo
+        echo
+    done
+done

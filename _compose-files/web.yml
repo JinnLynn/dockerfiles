@@ -3,6 +3,9 @@ services:
     nginx:
         image: jinnlynn/nginx
         restart: always
+        logging:
+            options:
+                max-size: 1m
         ports:
             - 80:80
             - 443:443
@@ -18,6 +21,9 @@ services:
         networks:
             default:
                 ipv4_address: 172.16.0.21
+        logging:
+            options:
+                max-size: 1m
         environment:
             GENPAC_CONFIG: /app/etc/config.ini
         volumes:
@@ -31,3 +37,33 @@ services:
         networks:
             default:
                 ipv4_address: 172.16.0.22
+        logging:
+            options:
+                max-size: 1m
+    alimama:
+        image: jinnlynn/alimama
+        build: ${KITS}/share/apps/alimama
+        restart: always
+        networks:
+            default:
+                ipv4_address: 172.16.0.23
+        logging:
+            options:
+                max-size: 1m
+        volumes:
+            - ${KITS}/share/apps/alimama/links.txt:/app/opt/links.txt
+    toolkit:
+        image: jinnlynn/toolkit
+        build: ${KITS}/share/apps/toolkit
+        restart: always
+        networks:
+            default:
+                ipv4_address: 172.16.0.24
+        logging:
+            options:
+                max-size: 1m
+        environment:
+            - LANG
+            - LC_ALL
+            - LC_CTYPE
+            - LANGUAGE

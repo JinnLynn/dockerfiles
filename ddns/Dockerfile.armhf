@@ -1,0 +1,15 @@
+FROM jinnlynn/alpine:armhf
+
+LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
+
+ENV DDNS_IP_SERVICE=http://ip.3322.net
+ENV DDNS_TOKEN=
+
+RUN set -ex && \
+    apk add --no-cache bash curl jq
+
+COPY entrypoint.sh /app/bin/entrypoint
+
+ENTRYPOINT ["entrypoint"]
+
+CMD ["--repeat"]

@@ -1,0 +1,15 @@
+FROM jinnlynn/alpine:armhf
+
+LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
+
+ENV REDIR_PORT 9528
+ENV REDIR_SERVER=
+ENV IPSET_GFWLIST GFWLIST
+
+RUN set -ex && \
+    apk add --no-cache iptables ipset curl
+
+COPY cnip.txt /app/opt/cnip.txt
+COPY entrypoint.sh /app/bin/entrypoint
+
+ENTRYPOINT ["entrypoint"]

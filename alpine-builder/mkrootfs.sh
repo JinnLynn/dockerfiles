@@ -5,7 +5,7 @@ ALPINE_RELEASE=${ALPINE_RELEASE:-edge}
 ALPINE_ARCH=${ALPINE_ARCH:-x86_64 armhf}
 ALPINE_MIRROR=${ALPINE_MIRROR:-https://mirrors.ustc.edu.cn/alpine/}
 ALPINE_LATEST=${ALPINE_LATEST:-}
-ALPINE_OUTPUT=${ALPINE_OUTPUT:-}
+ALPINE_OUTPUT=${ALPINE_OUTPUT:-/app/local}
 
 BASE_DIR=$(realpath $(dirname $0))
 TPL_DIR=${TPL_DIR:-/app/etc}

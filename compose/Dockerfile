@@ -1,4 +1,4 @@
-FROM jinnlynn/python:armhf
+FROM jinnlynn/python
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 

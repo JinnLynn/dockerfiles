@@ -8,6 +8,7 @@ PUSH=false
 VERBOSE=false
 FORCE_BUILD=false
 DRY_RUN=false
+BUILD_ARGS=
 
 BASE_DIR=$(realpath $(dirname $0))
 ARCH=
@@ -127,7 +128,13 @@ build() {
         echo_red $(echo_split "Build $tag ignored.")
     else
         local build_opt=
-        is_true $FORCE_BUILD && build_opt="--no-cache"
+        is_true $FORCE_BUILD && build_opt="$build_opt --no-cache"
+        [[ -n "$BUILD_ARGS" ]] && {
+            for a in $BUILD_ARGS; do
+                build_opt="$build_opt --build-arg $a"
+            done
+        }
+        echo $build_opt
         if run_cmd docker build --rm --force-rm --network=host $build_opt -t $tag -f $f $build_dir; then
             echo_green $(echo_split "Successfully built $tag with context $image")
             if is_true $PUSH; then
@@ -161,7 +168,7 @@ push() {
             pushed=1
             break
         }
-        echo "Try #$n failed... sleeping for 15 seconds"
+        echo "Try #$n failed... sleeping for 5 seconds"
         n=$[$n+1]
         sleep 5
     done
@@ -245,6 +252,16 @@ while (( ${#} )); do
         --push|-p )
             PUSH=true
             ;;
+        --build-arg )
+            shift 1
+            arg=${1:-}
+            [[ -n "$arg" ]] && BUILD_ARGS="$BUILD_ARGS $arg"
+            ;;
+        --proxy| -x)
+            shift 1
+            arg=${1:-}
+            [[ -n "$arg" ]] && BUILD_ARGS="$BUILD_ARGS http_proxy=$arg https_proxy=$arg"
+            ;;
         --force|-f )
             FORCE_BUILD=true
             ;;
@@ -272,6 +289,8 @@ done
 
 detect_arch
 
+BUILD_ARGS=$(echo $BUILD_ARGS)
+
 is_true $VERBOSE && {
     echo
     echo "USER:        $USER"
@@ -279,6 +298,7 @@ is_true $VERBOSE && {
     echo "PUSH:        $PUSH"
     echo "FORCE_BUILD: $FORCE_BUILD"
     echo "DRY_RUN:     $DRY_RUN"
+    echo "BUILD_ARGS:  $BUILD_ARGS"
     echo "FILE/DIR:    $@"
     echo
 }

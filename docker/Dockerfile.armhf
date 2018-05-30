@@ -2,7 +2,7 @@ FROM jinnlynn/alpine:armhf
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
-ARG DOCKER_VERSION=17.09.0
+ARG DOCKER_VERSION=18.03.1
 ARG DOCKER_BIN_URI=https://mirrors.ustc.edu.cn/docker-ce/linux/static/stable/armhf/docker-$DOCKER_VERSION-ce.tgz
 
 RUN set -ex && \

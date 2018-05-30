@@ -7,10 +7,13 @@ LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
 RUN set -ex && \
     apk add --no-cache busybox-extras && \
-    echo -e "A:*\n.js:application/javascript" >/etc/httpd.conf && \
     mkdir -p /app/var/www && \
     echo "it's work." >/app/var/www/index.html
 
+COPY httpd.conf /etc/httpd.conf
+
+WORKDIR /app/var/www
+
 EXPOSE 80
 
-CMD ["httpd", "-f", "-h", "/app/var/www"]
+CMD ["httpd", "-f", "-vv"]

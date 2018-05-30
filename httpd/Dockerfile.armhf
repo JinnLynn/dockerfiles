@@ -13,4 +13,6 @@ RUN set -ex && \
 
 EXPOSE 80
 
-CMD ["httpd", "-f", "-h", "/app/var/www"]
+WORKDIR /app/var/www
+
+CMD ["httpd", "-f", "-vv"]

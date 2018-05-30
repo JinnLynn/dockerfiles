@@ -5,6 +5,17 @@
 # vnstat  aria2  nginx  gitsrv  minidlna  dnsmasq-conf
 version: "3"
 services:
+    ddns:
+        image: jinnlynn/ddns:armhf
+        restart: always
+        environment:
+            - DDNS_TOKEN
+            - DDNS_DOMAIN
+            - DDNS_IP_SERVICE
+            - DDNS_CHECK_INTERVAL
+        logging:
+            options:
+                max-size: 1m
     dnsmasq-conf:
         image: jinnlynn/genpac-watch:armhf
         restart: always
@@ -12,6 +23,9 @@ services:
             - GPW_REMOTE
             - GPW_TOKEN
             - GPW_CONTAINER
+        logging:
+            options:
+                max-size: 1m
         volumes:
             - /var/run/docker.sock:/var/run/docker.sock
             - ${KITS_LOCAL}/genpac/dnsmasq.conf:/app/local/dnsmasq.conf
@@ -28,6 +42,9 @@ services:
         networks:
             default:
                 ipv4_address: 172.16.0.11
+        logging:
+            options:
+                max-size: 1m
         ports:
             - 6900:6900
             - 6901:6901/udp
@@ -38,9 +55,13 @@ services:
     nginx:
         image: jinnlynn/nginx:armhf
         restart: always
+        logging:
+            options:
+                max-size: 1m
         ports:
             - 6800:6800
             - 5580:5580
+            - 9980:9980
         volumes:
             - ${KITS}/etc/nginx/default.conf:/etc/nginx/conf.d/default.conf
             - ${KITS_LOCAL}/dehydrated/certs:/etc/nginx/certs
@@ -60,6 +81,9 @@ services:
         image: jinnlynn/minidlna:armhf
         restart: always
         network_mode: host
+        logging:
+            options:
+                max-size: 1m
         environment:
             MINIDLNA_WATCH_INTERVAL: 6h
         volumes:
@@ -68,10 +92,25 @@ services:
     bypy:
         image: jinnlynn/bypy:armhf
         restart: always
+        logging:
+            options:
+                max-size: 1m
         volumes:
             - ${KITS_LOCAL}/bypy:/root/.bypy
             - /cellar/mnt/media:/app/mnt/nas-media
             - /cellar/mnt/documents/Shared/Software:/app/mnt/nas-apps
+    # gogs:
+    #     image: jinnlynn/gogs:armhf
+    #     restart: always
+    #     networks:
+    #         default:
+    #             ipv4_address: 172.16.0.12
+    #     ports:
+    #         # - "9980:3000" # web 端口不外放 通过nginx反向代理
+    #         - "9922:2222"
+    #     volumes:
+    #         - ${KITS}/etc/gogs:/app/etc
+    #         - ${KITS_LOCAL}/gogs:/app/local
 volumes:
     vdata:
 networks:

@@ -4,8 +4,10 @@
 # P,IMAGE[:TAG] push忽略
 # B,IMAGE[:TAG] build忽略
 # ==================================
+P,ztest
 B,genpac-server:latest
 B,nsenter
 P,git-server
 P,genpac-server
 P,genpac-watch
+B,gogs

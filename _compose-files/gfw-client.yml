@@ -9,12 +9,18 @@ services:
         networks:
             freegate:
                 ipv4_address: 172.16.10.11
+        logging:
+            options:
+                max-size: 1m
         command: client_linux_arm7 -r $KCPTUN_REMOTE $KCPTUN_ARGS
     redir:
         image: jinnlynn/shadowsocks:armhf
         restart: always
         #! 必须
         network_mode: host
+        logging:
+            options:
+                max-size: 1m
         depends_on:
             - kcptun
         command: ss-redir -s 172.16.10.11 -p 12948 $SS_AUTH -l 9528 --reuse-port $SS_ARGS
@@ -23,29 +29,56 @@ services:
         restart: always
         networks:
             - freegate
+        logging:
+            options:
+                max-size: 1m
         ports:
             - 9553:1080/udp
         command: ss-tunnel $SS_SERVER $SS_AUTH -l 1080 -L 8.8.8.8:53 $SS_ARGS
+    freedom:
+        image: jinnlynn/freedom:armhf
+        # 如果没有 restart:always 退出时iptables添加的规则会被清空 WHY?
+        restart: always
+        #! 必须
+        privileged: true
+        network_mode: host
+        environment:
+            - REDIR_SERVER
+        command: ["gfwlist", "keep-alive"]
     dnsmasq:
         image: jinnlynn/dnsmasq:armhf
         restart: always
         #! 必须
         privileged: true
         network_mode: host
+        logging:
+            options:
+                max-size: 1m
         depends_on:
             - dns-tunnel
             - redir
+            - freedom
         volumes:
             - ${KITS}/etc/dnsmasq:/app/etc
             - ${KITS_LOCAL}/dnsmasq:/app/local
             - ${KITS_LOCAL}/genpac/dnsmasq.conf:/app/local/gfwlist.conf
-        command: ["-k", "--user=root", "--log-facility=-", "--conf-dir=/app/etc,*.conf", "--conf-file=/app/local/gfwlist.conf", "--dhcp-leasefile=/app/local/dnsmasq.leases"]
+        command:
+            - dnsmasq
+            - -k
+            - --user=root
+            - --log-facility=-
+            - --conf-dir=/app/etc,*.conf
+            - --conf-file=/app/local/gfwlist.conf
+            - --dhcp-leasefile=/app/local/dnsmasq.leases
     socks5:
         image: jinnlynn/shadowsocks:armhf
         restart: always
         networks:
             freegate:
                 ipv4_address: 172.16.10.12
+        logging:
+            options:
+                max-size: 1m
         depends_on:
             - kcptun
         ports:
@@ -57,12 +90,17 @@ services:
         restart: always
         networks:
             - freegate
+        logging:
+            options:
+                max-size: 1m
         depends_on:
             - socks5
         ports:
             - 9580:8123
             - 9580:8123/udp
-        command: ["socksProxyType=socks5", "socksParentProxy=172.16.10.12:1080"]
+        command:
+            - socksProxyType=socks5
+            - socksParentProxy=172.16.10.12:1080
 networks:
     freegate:
         driver: bridge
