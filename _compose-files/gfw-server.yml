@@ -18,9 +18,11 @@ services:
         environment:
             - SS_PWD
             - SS_METHOD
+            - SS_ARGS
         ports:
             - 57700:8388
             - 57700:8388/udp
+        command: ss-server -s 0.0.0.0 -p 8388 -k $SS_PWD -m $SS_METHOD $SS_ARGS
     ssk:
         image: jinnlynn/kcptun
         restart: always
@@ -33,7 +35,7 @@ services:
             - ss
         ports:
             - 55800:29900/udp
-        command: server_linux_amd64 --target 172.16.10.11:8388 $KCPTUN_ARGS
+        command: kcptun-server --target 172.16.10.11:8388 $KCPTUN_ARGS
     ss2:
         image: jinnlynn/shadowsocks:2.5.6
         restart: always
@@ -46,9 +48,11 @@ services:
         environment:
             - SS_PWD
             - SS_METHOD
+            - SS_ARGS
         ports:
             - 57701:8388
             - 57701:8388/udp
+        command: ss-server -s 0.0.0.0 -p 8388 -k $SS_PWD -m $SS_METHOD $SS_ARGS
     ss2k:
         image: jinnlynn/kcptun
         restart: always
@@ -61,7 +65,7 @@ services:
             - ss2
         ports:
             - 55801:29900/udp
-        command: server_linux_amd64 --target 172.16.10.12:8388 $KCPTUN_ARGS
+        command: kcptun-server --target 172.16.10.12:8388 $KCPTUN_ARGS
     vpn:
         image: hwdsl2/ipsec-vpn-server
         restart: always

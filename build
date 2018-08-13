@@ -1,4 +1,14 @@
 #!/bin/bash
+# 说明：
+# 多架构支持
+# build 过程:
+# 1. 查找Dockerfile，默认文件名『Dockerfile』如果存在『Dockerfile.架构』则优先使用
+# 2. 一级目录名为镜像名，TAG: latest，二级目录名为TAG
+# 3. 本地build时无论架构镜像:TAG均遵循第二点，但提交时TAG加上架构，如：
+#     目录                   本地镜像                     PUSH镜像
+#     shadowsocks           jinnlynn/shadowsocks        jinnlynn/shadowsocks:amd64
+#     shadowsocks/2.5.6     jinnlynn/shadowsocks:2.5.6  jinnlynn/shadowsocks:2.5.6-amd64
+#
 
 # 默认docker user
 USER=${DOCKER_USER:-}
@@ -8,68 +18,14 @@ PUSH=false
 VERBOSE=false
 FORCE_BUILD=false
 DRY_RUN=false
+QUIET=false
 BUILD_ARGS=
 
 BASE_DIR=$(realpath $(dirname $0))
 ARCH=
 SPECIFIED=false
 
-echo_red() {
-    echo -e "\033[31m$@\033[0m"
-}
-
-echo_green() {
-    echo -e "\033[32m$@\033[0m"
-}
-
-echo_split() {
-    local start=
-    if [[ -n "$@" ]]; then
-        echo "================================================="
-        echo "\n$@"
-        start="\n"
-    fi
-    echo "$start================================================="
-}
-
-echo_err() {
-    echo_red $@ >&2
-}
-
-exit_err() {
-    [[ -n "$@" ]] && echo_err "$@\n"
-    usage >&2
-    popd >/dev/null
-    exit 1
-}
-
-exit_ok() {
-    [[ -n "$@" ]] && echo_green $@
-    popd >/dev/null
-    exit 0
-}
-
-# 检测arch
-detect_arch() {
-    ARCH=${ARCH:-$(uname -m)}
-}
-
-# arch关系到生成镜像tag
-# 默认arch为x86_64, 如果为默认值则将其置空
-# arm芯片时将其值设为armhf
-arch_mark() {
-    case "$ARCH" in
-        x86_64)
-            echo
-            ;;
-        armv*)
-            echo "armhf"
-            ;;
-        *)
-            echo $ARCH
-            ;;
-    esac
-}
+. $BASE_DIR/_scripts/common.sh
 
 is_ignored() {
     local type=$1
@@ -86,30 +42,40 @@ is_push_ignored() {
     is_ignored P $1 $2
 }
 
-is_true() {
-    [[ -z "$1" || "$1" == "false" ]] && return 1 || return 0
+get_local_tag() {
+    local image=$1
+    local suite=$2
+    local tag=$image
+    [[ -n "$suite" && "$suite" != "latest" ]] && tag="$image:$suite"
+    [[ -n "$USER" ]] && tag="$USER/$tag"
+    echo $tag
 }
 
-run_cmd() {
-    is_true $DRY_RUN && echo "$@" && return 0
-    $@
+get_push_tag() {
+    local image=$1
+    local suite=$2
+    local tag=$image
+    [[ -z "$suite" || "$suite" == "latest" ]] && tag="$tag:$ARCH" || tag="$tag:$suite-$ARCH"
+    [[ -n "$USER" ]] && tag="$USER/$tag"
+    echo $tag
 }
 
+# 构建镜像
+# $1 默认dockerfile
 build() {
     local f=$1
+
+    # 1. 如果存在后缀为架构名的文件，则用其为dockerfile
+    [[ -f "$f.$ARCH" ]] && f="$f.$ARCH"
+
     local dockerfile=$(basename $f)
     local build_dir=$(dirname $f)
     local image=${build_dir%%\/*}
     suite=${build_dir##*\/}
 
     [[ "$suite" == "$build_dir" ]] && suite=""
-    suite=${suite:=latest}
-    [[ -n "$(arch_mark)" ]] &&  {
-        [[ "$suite" == "latest" ]] && suite=$(arch_mark) || suite="$(arch_mark)-$suite"
-    }
 
-    local tag="$image:$suite"
-    [[ -n "$USER" ]] && tag="$USER/$tag"
+    local tag=$(get_local_tag $image $suite)
 
     echo_green "Building $tag for context $build_dir[$dockerfile]"
     echo_green $(echo_split)
@@ -119,8 +85,9 @@ build() {
         echo_green "build_dir:  $build_dir"
         echo_green "dockerfile: $dockerfile"
         echo_green "image:      $image"
-        echo_green "suite:      $suite"
-        echo_green "tag:        $tag"
+        echo_green "suite:      ${suite:-latest}"
+        echo_green "local tag:  $tag"
+        echo_green "push tag:   $(get_push_tag $image $suite)"
         echo_green $(echo_split)
     fi
 
@@ -129,14 +96,16 @@ build() {
     else
         local build_opt=
         is_true $FORCE_BUILD && build_opt="$build_opt --no-cache"
+        is_true $QUIET && build_opt="$build_opt --quiet"
         [[ -n "$BUILD_ARGS" ]] && {
             for a in $BUILD_ARGS; do
                 build_opt="$build_opt --build-arg $a"
             done
         }
-        echo $build_opt
+        # echo $build_opt
         if run_cmd docker build --rm --force-rm --network=host $build_opt -t $tag -f $f $build_dir; then
-            echo_green $(echo_split "Successfully built $tag with context $image")
+            echo_green_split "Successfully built $tag with context $image"
+            
             if is_true $PUSH; then
                 push "$image" "$suite"
             fi
@@ -151,20 +120,25 @@ build() {
 push() {
     local image=$1
     local suite=$2
-    local tag="$image:$suite"
+    local tag=$(get_local_tag $image $suite)
+    local push_tag=$(get_push_tag $image $suite)
+
+    local tag_push_desc="$tag => $push_tag"
 
     if ! is_true $SPECIFIED && is_push_ignored $image $tag; then
-        echo_red $(echo_split "Push $tag ignored.")
+        echo_red $(echo_split "Push $tag_push_desc ignored.")
         return 0
     fi
 
-    [[ -n "$USER" ]] && tag="$USER/$tag"
-    echo_green $(echo_split "Pushing $tag")
+    # 标记一个push的临时tag
+    run_cmd docker tag $tag $push_tag
+
+    echo_green $(echo_split "Pushing $tag_push_desc")
     local n=0
     local pushed=
     until [ $n -ge 5 ]; do
-        run_cmd docker push $tag && {
-            echo_green $(echo_split "Successfully push $tag")
+        run_cmd docker push $push_tag && {
+            echo_green $(echo_split "Successfully push $tag_push_desc")
             pushed=1
             break
         }
@@ -172,19 +146,22 @@ push() {
         n=$[$n+1]
         sleep 5
     done
-    [[ -z "$pushed" ]] && echo_red $(echo_split "Push $tag fail.")
+    [[ -z "$pushed" ]] && echo_red $(echo_split "Push $tag_push_desc fail.")
+
+    # 删除临时标记
+    run_cmd docker image rm $push_tag
 }
 
 detect_dockerfile() {
-    df=${1:-Dockerfile}
+    local df=${1:-Dockerfile}
     [[ -d "$df" ]] && df="$df/Dockerfile"
-    [[ -n "$(arch_mark)" ]] && df="$df.$(arch_mark)"
+    [[ -n "$(arch_go_mark)" ]] && arch_df="$df.$(arch_go_mark)"
     echo $df
 }
 
 build_all() {
     IFS=$'\n'
-    files=$(find . -maxdepth 3 ! -ipath '.\/[~\._]*' -iname $(detect_dockerfile) | sed 's|./||' | sort)
+    files=$(find . -maxdepth 3 ! -ipath '.\/[~\._]*' -iname "Dockerfile" | sed 's|./||' | sort)
     unset IFS
 
     for f in ${files[@]}; do
@@ -204,7 +181,7 @@ build_single() {
     [[ -f "$single" ]] && files=($single) || {
         single=${single%/}
         IFS=$'\n'
-        files=$(find "$single" -maxdepth 2 ! -ipath '.\/[~\._]*' -iname $(detect_dockerfile) | sort)
+        files=$(find "$single" -maxdepth 2 ! -ipath '.\/[~\._]*' -iname "Dockerfile" | sort)
         unset IFS
     }
 
@@ -272,6 +249,9 @@ while (( ${#} )); do
             DRY_RUN=true
             VERBOSE=true
             ;;
+        --quiet|-q)
+            QUIET=true
+            ;;
         --help|-h )
             usage
             exit_ok
@@ -287,7 +267,7 @@ while (( ${#} )); do
     shift 1
 done
 
-detect_arch
+ARCH=$(arch_go_mark)
 
 BUILD_ARGS=$(echo $BUILD_ARGS)
 

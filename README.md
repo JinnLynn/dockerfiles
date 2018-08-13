@@ -9,3 +9,11 @@
 2. 执行生成
 
 docker run --rm -ti -v $(pwd)/alpine:/app/local jinnlynn/alpine-builder
+
+
+## 依赖
+
+1. alpine
+2. httpd python python3
+3. flask
+4. ...

@@ -9,7 +9,7 @@ RUN set -ex && \
     apk add --no-cache curl && \
     curl -SL $DLINK | tar xz -C /app/bin && \
     apk del --no-cache curl && \
-    ln -s /app/bin/server_linux_$(arch --go) /app/bin/kcptun-server && \
-    ln -s /app/bin/client_linux_$(arch --go) /app/bin/kcptun-client
+    ln -s /app/bin/server_linux_arm7 /app/bin/kcptun-server && \
+    ln -s /app/bin/client_linux_arm7 /app/bin/kcptun-client
 
-CMD ["kcptun-server", "--help"]
+CMD ["kcptun-client", "--help"]

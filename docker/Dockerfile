@@ -1,14 +1,15 @@
-FROM jinnlynn/alpine:armhf
+FROM jinnlynn/alpine
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
 ARG DOCKER_VERSION=18.03.1
-ARG DOCKER_BIN_URI=https://mirrors.ustc.edu.cn/docker-ce/linux/static/stable/armhf/docker-$DOCKER_VERSION-ce.tgz
+ARG MIRROR=https://mirrors.ustc.edu.cn/docker-ce
 
 RUN set -ex && \
+    DLINK="$MIRROR/linux/static/stable/$(arch)/docker-$DOCKER_VERSION-ce.tgz" && \
     cd /tmp && \
     apk add --no-cache curl tar && \
-    curl -fL -o docker.tgz $DOCKER_BIN_URI && \
+    curl -fL -o docker.tgz $DLINK && \
     tar --extract \
         --file docker.tgz \
         --strip-components 1 \

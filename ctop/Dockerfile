@@ -4,13 +4,13 @@ FROM jinnlynn/alpine
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
-ARG CTOP_VER="0.7"
-ARG CTOP_URL="https://github.com/bcicen/ctop/releases/download/v$CTOP_VER/ctop-$CTOP_VER-linux-amd64"
+ARG CTOP_VER="0.7.1"
 
 # x86_64下需要libc6-compat
 RUN set -ex && \
+    DLINK="https://github.com/bcicen/ctop/releases/download/v$CTOP_VER/ctop-$CTOP_VER-linux-$(arch --go)" && \
     apk add --no-cache curl libc6-compat && \
-    curl -SL -o /app/bin/ctop $CTOP_URL && \
+    curl -SL -o /app/bin/ctop $DLINK && \
     chmod +x /app/bin/ctop && \
     apk del --no-cache curl
 

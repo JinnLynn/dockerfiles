@@ -30,7 +30,7 @@ services:
             - ${KITS}/share/genpac:/app/opt/genpac
             - ${KITS}/share/genpac-server:/app/opt/genpac-server
             - ${KITS}/etc/genpac:/app/etc
-            - ${KITS_VAR}/local/genpac:/app/var/local
+            - ${KITS_VAR}/local/genpac:/app/local
     ariang:
         image: jinnlynn/ariang
         restart: always
@@ -40,18 +40,6 @@ services:
         logging:
             options:
                 max-size: 1m
-    alimama:
-        image: jinnlynn/alimama
-        build: ${KITS}/share/apps/alimama
-        restart: always
-        networks:
-            default:
-                ipv4_address: 172.16.0.23
-        logging:
-            options:
-                max-size: 1m
-        volumes:
-            - ${KITS}/share/apps/alimama/links.txt:/app/opt/links.txt
     toolkit:
         image: jinnlynn/toolkit
         build: ${KITS}/share/apps/toolkit

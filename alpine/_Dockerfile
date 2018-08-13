@@ -28,5 +28,6 @@ LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 ENV PATH=/app/bin:$PATH
 
 COPY --from=builder /tmp/rootfs/ /
+COPY arch.sh /app/bin/arch
 
 CMD ["/bin/sh"]

@@ -1,0 +1,89 @@
+#!/bin/bash
+
+SPECIFIED=
+DRY_RUN=
+
+. _scripts/common.sh
+
+push_from_spec() {
+    echo_green_split "Push manifest list: $1"
+    run_cmd manifest-tool --debug push from-spec $1
+    echo 
+    echo
+}
+
+push_from_args() {
+    local image=$(basename $1)
+    image=${image%%\/*}
+    echo_green_split "Push from args : $image"
+    run_cmd manifest-tool --debug push from-args \
+        --platforms linux/amd64,linux/arm \
+        --template jinnlynn/$image:ARCH \
+        --target jinnlynn/$image
+}
+
+push_all() {
+    echo push_all
+    local dirs=$(find . -maxdepth 1 -type d ! -ipath '.\/[~\._]*' ! -path '.' | sort)
+    for d in ${dirs[@]}; do
+        push_single "$d"
+    done
+}
+
+push_single() {
+    local single=$1
+    echo $single
+    [[ ! -e "$single" ]] && {
+        echo_red_split "$single missing"
+        echo
+        return 1
+    }
+
+    local files=
+    [[ -f "$single" ]] && files=($single) || {
+        single=${single%/}
+        IFS=$'\n'
+        files=$(find "$single" -maxdepth 2 -type f -name "manifest.yaml" -o -path "*/manifest.d/*.yaml" | sort -r)
+        unset IFS
+    }
+
+    echo "1. ${files[@]}"
+    [[ -z "${files[@]}" ]] && {
+        push_from_args $single
+        return
+    }
+
+    for f in ${files[@]}; do
+        push_from_spec "$f"
+    done
+}
+
+while (( ${#} )); do
+    case "$1" in
+        --verbose|-v )
+            VERBOSE=true
+            ;;
+        --dry-run|-d)
+            DRY_RUN=true
+            VERBOSE=true
+            ;;
+        -* )
+            exit_err "错误的选项: $1"
+            ;;
+        * )
+            # 参数结束
+            break
+            ;;
+    esac
+    shift 1
+done
+
+if [[ $# -eq 0 ]]; then
+    push_all
+else
+    SPECIFIED=true
+    while [[ $# -gt 0 ]]; do
+        push_single $1
+        shift $(( $# > 0 ? 1 : 0 ))
+    done
+fi

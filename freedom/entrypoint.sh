@@ -15,8 +15,8 @@ REDIR_LOCAL=${REDIR_LOCAL:-10/8,172.16/12,192.168/16}
 IPSET_GFWLIST=${IPSET_GFWLIST:-GFWLIST}
 # 中国IP ipset setname
 IPSET_CNIP=${IPSET_CNIP:-CNIP}
-# cnip数据地址
-CNIP_URI=${CNIP_URI:-http://f.ip.cn/rt/chnroutes.txt}
+# IP数据地址
+IPDATA_URI=${IPDATA_URI:-https://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest}
 # cnip数据本地文件 如果在线无法下载则使用此文件
 CNIP_FILE=${CNIP_FILE:-/app/opt/cnip.txt}
 TPROXY_MARK="0x2333/0x2333"
@@ -37,9 +37,9 @@ reset_ipset() {
 
 # 下载cnip数据，成功输出数据临时文件 失败不输出
 _download_cnip_data() {
-    [ -z "$CNIP_URI" ] && return 1
+    [ -z "$IPDATA_URI" ] && return 1
     local dfile=$(mktemp)
-    curl -sL -o $dfile "$CNIP_URI" && echo $dfile
+    curl -sSL "$IPDATA_URI" | awk -F\| '/CN\|ipv4/ { printf("%s/%d\n", $4, 32-log($5)/log(2)) }' >$dfile && echo $dfile
 }
 
 update_cnip() {
@@ -49,11 +49,11 @@ update_cnip() {
     ipset list $IPSET_CNIP | grep -e ^[0-9] -q && return
 
     # 下载cnip数据
-    local dfile=$(_download_cnip_data)
-    local cnip_file=${dfile:-$CNIP_FILE}
+    # local dfile=$(_download_cnip_data)
+    # [ -n "$dfile" ] && cat $dfile >$CNIP_FILE
 
     # 添加ip
-    cat "$cnip_file" | while read line; do
+    cat "$CNIP_FILE" | while read line; do
         [ "${line:0:1}" = '#' ] && continue
         ipset add $IPSET_CNIP $line
     done
@@ -281,6 +281,9 @@ case "$1" in
         ;;
     update-cnip )
         update_cnip force
+        ;;
+    ip-data )
+        cat $CNIP_FILE
         ;;
     help )
         usage

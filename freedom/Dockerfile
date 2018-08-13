@@ -1,4 +1,4 @@
-FROM jinnlynn/alpine:armhf
+FROM jinnlynn/alpine
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
