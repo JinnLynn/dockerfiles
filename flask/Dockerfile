@@ -13,6 +13,10 @@ COPY app.py /app/opt/app.py
 
 WORKDIR /app/opt
 
-EXPOSE 8000 9000 9000/udp
-
-CMD ["uwsgi", "--http", "0.0.0.0:8000", "--socket", "0.0.0.0:9000", "--module", "app:app"]
+EXPOSE 8000
+# 直接作为web服务器
+# CMD ["uwsgi", "--http", ":8000", "--module", "app:app"]
+# 作为不支持uwsgi仅支持http的反向代理服务器的上游服务器
+# CMD ["uwsgi", "--http-socket", ":8000", "--module", "app:app"]
+# 作为反向代理服务器(如：nginx)的上游服务器
+CMD ["uwsgi", "--socket", ":8000", "--module", "app:app"]
