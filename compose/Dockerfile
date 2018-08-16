@@ -2,20 +2,15 @@ FROM jinnlynn/python
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
-ARG VERSION=1.21.2
-ARG URL=https://github.com/docker/compose/archive/$VERSION.tar.gz
+ARG VERSION=1.22.0
 
-# python setup.py 安装依赖包时无法使用国内源，易失败，预先使用pip install -r requirements.txt安装依赖
 RUN set -ex && \
-    cd /tmp && \
-    apk add --no-cache curl && \
-    curl -SL $URL | tar xz --strip 1 && \
-    pip install --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt && \
-    python setup.py install && \
-    apk del --no-cache curl && \
-    rm -rf /tmp/*
+    pip install -U --no-cache-dir pip "docker-compose${VERSION:+==}${VERSION}"
+
+# 1.90.0后run和exec需要通过docker执行，通过设置环境变量COMPOSE_INTERACTIVE_NO_CLI可忽略
+# REF: https://github.com/docker/compose/blob/master/CHANGELOG.md#1190-2018-02-07
+ENV COMPOSE_INTERACTIVE_NO_CLI=true
 
 ENTRYPOINT ["docker-compose"]
 
-CMD ["--help"]
+CMD ["version"]
