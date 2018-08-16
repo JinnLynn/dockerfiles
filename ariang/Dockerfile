@@ -2,13 +2,9 @@ FROM jinnlynn/httpd
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
-ARG URI=https://github.com/mayswind/AriaNg-DailyBuild/archive/master.zip
-
 RUN set -ex && \
+    DLINK="https://github.com/mayswind/AriaNg-DailyBuild/archive/master.tar.gz" && \
     apk add --no-cache curl && \
-    cd /tmp && \
-    curl -SL -o t.zip "$URI" && \
-    unzip -qo t.zip && \
-    mv AriaNg-*/* /app/var/www/ && \
-    apk del --no-cache curl && \
-    rm -rf /tmp/*
+    mkdir -p /app/var/www && \
+    curl -SL "$DLINK" | tar xz --strip-components 1 -C /app/var/www && \
+    apk del --no-cache curl

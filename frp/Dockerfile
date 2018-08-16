@@ -2,20 +2,14 @@ FROM jinnlynn/alpine
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
-ARG FRP_VERSION="0.20.0"
+ARG VERSION="0.20.0"
 
 RUN set -ex && \
-    DLINK="https://github.com/fatedier/frp/releases/download/v${FRP_VERSION}/frp_${FRP_VERSION}_linux_$(arch --go).tar.gz" && \
-    cd /tmp && \
+    DLINK="https://github.com/fatedier/frp/releases/download/v${VERSION}/frp_${VERSION}_linux_$(arch --go).tar.gz" && \
     apk add --no-cache curl && \
-    curl -SL $DLINK | tar xz && \
-    cd frp_* && \
-    cp frpc frps /app/bin && \
-    cp *.ini /app/etc && \
-    apk del --no-cache curl && \
-    cd / && \
-    rm -rf /tmp/*
+    curl -SL $DLINK | tar xz --strip-components 1 --exclude */LICENSE -C /app/bin && \
+    apk del --no-cache curl
 
 EXPOSE 80 443 7000 7500
 
-CMD frps -v
+CMD ["frps", "-v"]
