@@ -2,21 +2,16 @@ FROM jinnlynn/alpine
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
-ARG SC_URL=https://github.com/jech/polipo/archive/master.zip
-
 RUN set -ex && \
+    DLINK="https://github.com/jech/polipo/archive/master.tar.gz" && \
     cd /tmp && \
-    apk update && \
-    apk add --virtual .build-deps curl build-base openssl && \
-    curl -SL -o polipo.zip $SC_URL && \
-    unzip -q polipo.zip && \
-    cd polipo-master && \
+    apk add --no-cache --virtual .build-deps build-base openssl && \
+    wget -O- "$DLINK" | tar xz --strip-components 1 && \
     make && \
-    install polipo /usr/local/bin/ && \
-    cd .. &&\
+    install polipo /app/bin && \
     mkdir -p /usr/share/polipo/www /var/cache/polipo && \
-    apk del .build-deps && \
-    rm -rf /tmp/* /var/cache/apk/*
+    apk del --no-cache .build-deps && \
+    rm -rf /tmp/*
 
 EXPOSE 8123
 

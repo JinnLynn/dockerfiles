@@ -2,13 +2,11 @@ FROM jinnlynn/alpine
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
-ARG KCPTUN_VER=20180316
+ARG VERSION=20180316
 
 RUN set -ex && \
-    DLINK=https://github.com/xtaci/kcptun/releases/download/v$KCPTUN_VER/kcptun-linux-$(arch --go)-$KCPTUN_VER.tar.gz && \
-    apk add --no-cache curl && \
-    curl -SL $DLINK | tar xz -C /app/bin && \
-    apk del --no-cache curl && \
+    DLINK=https://github.com/xtaci/kcptun/releases/download/v${VERSION}/kcptun-linux-$(arch --go)-${VERSION}.tar.gz && \
+    wget -O- $DLINK | tar xz -C /app/bin && \
     ln -s /app/bin/server_linux_$(arch --go) /app/bin/kcptun-server && \
     ln -s /app/bin/client_linux_$(arch --go) /app/bin/kcptun-client
 
