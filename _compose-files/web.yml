@@ -64,3 +64,12 @@ services:
     #     logging:
     #         options:
     #             max-size: 1m
+    speedtest:
+        image: jinnlynn/speedtest
+        restart: always
+        networks:
+            default:
+                ipv4_address: 172.16.0.26
+        logging:
+            options:
+                max-size: 1m
