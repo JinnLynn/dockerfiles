@@ -2,10 +2,32 @@
 # 翻墙(shadowsocks vpn): gfw-server.yml 同时加载即可
 # 网页: web.yml
 # 其它服务
-# 流量     web    ssh加速
-# vnstat  nginx  ssh-kcp
+# 内网穿透服务端  流量    ssh加速
+# frps          vnstat  ssh-kcp
 version: "3"
 services:
+    frps:
+        image: jinnlynn/frp
+        restart: always
+        networks:
+            default:
+                ipv4_address: 172.16.0.11
+        volumes:
+            - ${KITS}/etc/frp/:/app/etc/
+        ports:
+            - "7000:7000"
+            - "7000:7000/udp"
+            - "7001:7001/udp"
+            - "7500:7500"
+            - "5522:5522"   # rpi ssh
+            - "5568:5568"   # rpi aria2-rpc
+        command: frps -c /app/etc/frps.ini
+    vnstat:
+        image: jinnlynn/vnstat
+        restart: always
+        network_mode: host
+        volumes:
+            - /var/lib/vnstat:/var/lib/vnstat
     ssh-kcp:
         image: jinnlynn/kcptun
         restart: always
@@ -13,12 +35,6 @@ services:
         ports:
             - 55802:29900/udp
         command: server_linux_amd64 --target 127.0.0.1:22 $KCPTUN_ARGS
-    vnstat:
-        image: jinnlynn/vnstat
-        restart: always
-        network_mode: host
-        volumes:
-            - /var/lib/vnstat:/var/lib/vnstat
 networks:
     default:
         driver: bridge

@@ -1,10 +1,17 @@
 # 树莓派网关上运行的服务
 # 翻墙(匿名代理): gfw-client.yml, 同时加载即可
 # 其它服务:
-# 流量统计 下载    web    git     DLNA      dnsmasq配置监控更新
-# vnstat  aria2  nginx  gitsrv  minidlna  dnsmasq-conf
+# 内网穿透客户端  流量统计 下载    web   git     DLNA      dnsmasq配置监控更新
+# frpc          vnstat  aria2  nginx  gitsrv  minidlna  dnsmasq-conf
 version: "3"
 services:
+    frpc:
+        image: jinnlynn/frp
+        restart: always
+        network_mode: host
+        volumes:
+            - ${KITS}/etc/frp/:/app/etc/
+        command: frpc -c /app/etc/frpc.ini
     ddns:
         image: jinnlynn/ddns
         restart: always
