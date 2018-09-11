@@ -5,7 +5,7 @@ user=${GIT_USER:-git}
 for k in rsa dsa ecdsa ed25519; do
     f="/etc/ssh/ssh_host_${k}_key"
     if [ ! -f "$f" ]; then
-        echo "dsa host key missing, generating..."
+        echo "${k} host key missing, generating..."
         ssh-keygen -f $f -t $k -N ''
     fi
 done

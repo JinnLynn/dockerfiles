@@ -74,8 +74,9 @@ services:
     gitsrv:
         image: jinnlynn/git-server
         restart: always
-        ports:
-            - "5448:22" # 双引号去掉会出错, WHY
+        networks:
+            default:
+                ipv4_address: 172.16.0.12
         volumes:
             - /cellar/mnt/repo/git:/app/local
             - ${KITS}/etc/docker/jkey.pub:/app/etc/jkey.pub

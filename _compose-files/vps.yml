@@ -20,6 +20,7 @@ services:
             - "7001:7001/udp"
             - "7500:7500"
             - "5522:5522"   # rpi ssh
+            - "5544:5544"   # gitsrv
             - "5568:5568"   # rpi aria2-rpc
         command: frps -c /app/etc/frps.ini
     vnstat:
