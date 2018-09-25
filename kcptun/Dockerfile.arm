@@ -2,7 +2,7 @@ FROM jinnlynn/alpine
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
-ARG VERSION=20180810
+ARG VERSION=20180922
 
 RUN set -ex && \
     DLINK=https://github.com/xtaci/kcptun/releases/download/v${VERSION}/kcptun-linux-$(arch --go)-${VERSION}.tar.gz && \
