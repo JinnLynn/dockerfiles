@@ -2,7 +2,7 @@ FROM jinnlynn/alpine
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
-ARG VERSION="3.2.0"
+ARG VERSION="3.2.3"
 
 RUN set -ex && \
     DLINK=https://github.com/shadowsocks/shadowsocks-libev/releases/download/v${VERSION}/shadowsocks-libev-${VERSION}.tar.gz && \
