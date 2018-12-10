@@ -3,7 +3,7 @@ FROM jinnlynn/python
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
 # pip将安装 >= $VERSION 的版本
-ARG VERSION="2018.9.10"
+ARG VERSION="2018.12.09"
 
 RUN set -ex && \
     pip install -U --no-cache-dir pip "youtube-dl${VERSION:+>=}${VERSION}" && \
