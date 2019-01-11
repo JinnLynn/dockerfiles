@@ -2,7 +2,7 @@ FROM jinnlynn/python
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
-ARG VERSION=1.22.0
+ARG VERSION=1.23.2
 
 RUN set -ex && \
     pip install -U --no-cache-dir pip "docker-compose${VERSION:+==}${VERSION}"
