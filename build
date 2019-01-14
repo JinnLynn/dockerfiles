@@ -2,7 +2,7 @@
 # 说明：
 # 多架构支持
 # build 过程:
-# 1. 查找Dockerfile，默认文件名『Dockerfile』如果存在『Dockerfile.架构』则优先使用
+# 1. 查找Dockerfile，默认文件名『Dockerfile』，如果存在『Dockerfile.架构』则优先使用
 # 2. 一级目录名为镜像名，TAG: latest，二级目录名为TAG
 # 3. 本地build时无论架构镜像:TAG均遵循第二点，但提交时TAG加上架构，如：
 #     目录                   本地镜像                     PUSH镜像
@@ -61,12 +61,19 @@ get_push_tag() {
 }
 
 # 构建镜像
-# $1 默认dockerfile
+# $1 目录或Dockerfile路径
 build() {
-    local f=$1
+    local f
 
-    # 1. 如果存在后缀为架构名的文件，则用其为dockerfile
-    [[ -f "$f.$ARCH" ]] && f="$f.$ARCH"
+    # 参数为目录时如果存在后缀为架构名的文件，则用其为dockerfile
+    [[ -d "$1" ]] && {
+        [[ -f "$1/Dockerfile.$ARCH" ]] && f="$1/Dockerfile.$ARCH" || f="$1/Dockerfile"
+    } || f="$1"
+
+    [[ ! -f "$f" ]] && {
+        echo_red_split "$1 Dockerfile missing."
+        return 1
+    }
 
     local dockerfile=$(basename $f)
     local build_dir=$(dirname $f)
@@ -78,7 +85,7 @@ build() {
     local tag=$(get_local_tag $image $suite)
 
     echo_green "Building $tag for context $build_dir[$dockerfile]"
-    echo_green $(echo_split)
+    echo_green_split
     if is_true $VERBOSE; then
         echo_green "arch:       $ARCH"
         echo_green "filepath:   $f"
@@ -88,11 +95,11 @@ build() {
         echo_green "suite:      ${suite:-latest}"
         echo_green "local tag:  $tag"
         echo_green "push tag:   $(get_push_tag $image $suite)"
-        echo_green $(echo_split)
+        echo_green_split
     fi
 
     if ! is_true $SPECIFIED && is_build_ignored $image $suite; then
-        echo_red $(echo_split "Build $tag ignored.")
+        echo_red_split "Build $tag ignored."
     else
         local build_opt=
         is_true $FORCE_BUILD && build_opt="$build_opt --no-cache"
@@ -105,12 +112,12 @@ build() {
         # echo $build_opt
         if run_cmd docker build --rm --force-rm --network=host $build_opt -t $tag -f $f $build_dir; then
             echo_green_split "Successfully built $tag with context $image"
-            
+
             if is_true $PUSH; then
                 push "$image" "$suite"
             fi
         else
-            echo_red $(echo_split "Build $tag with context $image fail.")
+            echo_red_split "Build $tag with context $image fail."
         fi
     fi
     echo
@@ -126,19 +133,19 @@ push() {
     local tag_push_desc="$tag => $push_tag"
 
     if ! is_true $SPECIFIED && is_push_ignored $image $tag; then
-        echo_red $(echo_split "Push $tag_push_desc ignored.")
+        echo_red_split "Push $tag_push_desc ignored."
         return 0
     fi
 
     # 标记一个push的临时tag
     run_cmd docker tag $tag $push_tag
 
-    echo_green $(echo_split "Pushing $tag_push_desc")
+    echo_green_split "Pushing $tag_push_desc"
     local n=0
     local pushed=
     until [ $n -ge 5 ]; do
         run_cmd docker push $push_tag && {
-            echo_green $(echo_split "Successfully push $tag_push_desc")
+            echo_green_split "Successfully push $tag_push_desc"
             pushed=1
             break
         }
@@ -146,7 +153,7 @@ push() {
         n=$[$n+1]
         sleep 5
     done
-    [[ -z "$pushed" ]] && echo_red $(echo_split "Push $tag_push_desc fail.")
+    [[ -z "$pushed" ]] && echo_red_split "Push $tag_push_desc fail."
 
     # 删除临时标记
     run_cmd docker image rm $push_tag
@@ -160,19 +167,16 @@ detect_dockerfile() {
 }
 
 build_all() {
-    IFS=$'\n'
-    files=$(find . -maxdepth 3 ! -ipath '.\/[~\._]*' -iname "Dockerfile" | sed 's|./||' | sort)
-    unset IFS
-
-    for f in ${files[@]}; do
-        build "$f"
+    local dirs=$(find_dirs)
+    for d in ${dirs[@]}; do
+        build "$d"
     done
 }
 
 build_single() {
     local single=$1
     [[ ! -e "$single" ]] && {
-        echo_red $(echo_split "$single missing")
+        echo_red_split "$single missing"
         echo
         return 1
     }
@@ -180,9 +184,12 @@ build_single() {
     local files=
     [[ -f "$single" ]] && files=($single) || {
         single=${single%/}
-        IFS=$'\n'
-        files=$(find "$single" -maxdepth 2 ! -ipath '.\/[~\._]*' -iname "Dockerfile" | sort)
-        unset IFS
+        files=$(find_dirs $single 2)
+    }
+
+    [[ -z "$files" ]] && {
+        echo_red_split "$single Dockerfile missing"
+        return 1
     }
 
     for f in ${files[@]}; do
@@ -207,7 +214,10 @@ USAGE: $0 [OPTIONS] [DOCKERFILE ...]
 
 Options:
   -h, --help        帮助
-  -u, --user USER   Docker hub用户名
+  -u, --user USER   Docker hub用户名，可为空，不指定默认通过docker info获取
+  -x, --proxy       代理，在docker build中添加代理相关参数
+  --quiet           安静模式，在docker build中添加--quiet参数
+  --build-arg       自定义创建参数，添加到docker build命令中
   -p, --push        构造镜像后推送至镜像库
   -f, --force       强制重建，不使用缓存
   -d, --dry-run     仅输出运行过程
