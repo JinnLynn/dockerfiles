@@ -16,7 +16,7 @@ ALPINE_ARCH 输出平台, 默认: x86_64 armhf
 
 ALPINE_LATEST 生成dockerfile的默认最新版本，默认: 3.7
 
-ALPINE_MIRROR 软件库镜像，默认: https://mirrors.ustc.edu.cn/alpine/
+ALPINE_MIRROR 软件库镜像，默认: https://mirrors.aliyun.com/alpine
 
 ALPINE_OUTPUT 输出路径(docker镜像中的路径)，默认: /app/local
 

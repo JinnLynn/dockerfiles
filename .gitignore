@@ -3,6 +3,9 @@ _tmp/**
 genpac-server/
 genpac-watch/
 
+gogs/
+ztest/
+
 # Windows
 # REF: https://github.com/github/gitignore/blob/master/Global/Windows.gitignore
 Desktop.ini

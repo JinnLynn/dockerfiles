@@ -8,11 +8,10 @@
 #
 # 也可自定义描述
 #
-# AUTHOR:   JinnLynn <eatfishlin@gmail.com>
-# DATE:     2018-09-26
+# AUTHOR: JinnLynn <eatfishlin@gmail.com>
 #
 
-VERSION=2018.09.26
+VERSION=2019.01.14
 # 架构的系统原生描述
 ARCH=
 # 是否使用当前环境原生输出
@@ -51,7 +50,7 @@ arch_mark() {
         amd64|x86_64 )
             [ -n "$ARCH_AMD64" ] && mark=$ARCH_AMD64
             ;;
-        armhf )
+        arm* )
             [ -n "$ARCH_ARM" ] && mark=$ARCH_ARM
             ;;
         arm64|aarch64 )
@@ -76,7 +75,8 @@ print() {
 
 help() {
 cat <<EOF
-USAGE: $0 [OPTION]
+
+USAGE: $(basename $0) [OPTION]
 
 系统架构，默认使用GO语言的架构描述。
 
@@ -84,9 +84,10 @@ Options:
     --check|-c MARK     比较检测arch
     --raw|-r            使用环境原生的架构描述
                         有此参数时将忽略下列自定义输出
+
     --386 MARK          自定义386/i386/x86架构输出
     --amd64 MARK        自定义amd64/x86_64架构输出
-    --arm MARK          自定义arm/armhf架构输出
+    --arm MARK          自定义arm/armhf/armv7架构输出
     --arm64 MARK        自定义aarch64/arm64架构输出
 
     --help|-h           帮助
@@ -97,7 +98,7 @@ EOF
 while [ ${#} -gt 0 ]; do
     case "$1" in
         --version|-v )
-            echo "arch v$VERSION"
+            echo "$(basename $0) v$VERSION"
             exit 0
             ;;
         --help|-h )
@@ -123,9 +124,9 @@ while [ ${#} -gt 0 ]; do
             shift 1
             ARCH_ARM=$1
             ;;
-        --amd64 )
+        --arm64 )
             shift 1
-            ARCH_AMD64=$1
+            ARCH_ARM64=$1
             ;;
         -* )
             exit_err "ERROR OPTION: $1"

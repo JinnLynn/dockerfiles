@@ -14,16 +14,31 @@
 USER=${DOCKER_USER:-}
 [[ -z "$USER" ]] && USER=$(docker info 2>/dev/null | grep Username | awk '{print $2}')
 
-PUSH=false
-VERBOSE=false
-FORCE_BUILD=false
-DRY_RUN=false
-QUIET=false
-BUILD_ARGS=
+CMD_PUSH=false
+CMD_VERBOSE=false
+CMD_FORCE=false
+CMD_DRY_RUN=false
+CMD_QUIET=false
+CMD_MANIFEST=false
+CMD_BUILD_ARGS=
+CMD_BUILD_OPTS=
+
+LIBRARY=library
+
+# macOS下没有 realpath
+# REF: https://stackoverflow.com/questions/3572030/bash-script-absolute-path-with-os-x/3572105#3572105
+which realpath 1>/dev/null 2>&1 || {
+    realpath() {
+        [[ $1 = /* ]] && echo "$1" || echo "$PWD/${1#./}"
+    }
+}
+
 
 BASE_DIR=$(realpath $(dirname $0))
 ARCH=
 SPECIFIED=false
+
+ALL_BUILD_PRIORITY="alpine ubuntu httpd python python/3 flask php php/fpm nodejs"
 
 . $BASE_DIR/_scripts/common.sh
 
@@ -54,14 +69,13 @@ get_local_tag() {
 get_push_tag() {
     local image=$1
     local suite=$2
-    local tag=$image
-    [[ -z "$suite" || "$suite" == "latest" ]] && tag="$tag:$ARCH" || tag="$tag:$suite-$ARCH"
+    local tag=$LIBRARY
+    [[ -z "$suite" || "$suite" == "latest" ]] && tag="$tag:$image-$ARCH" || tag="$tag:$image-$suite-$ARCH"
     [[ -n "$USER" ]] && tag="$USER/$tag"
     echo $tag
 }
 
-# 构建镜像
-# $1 目录或Dockerfile路径
+
 build() {
     local f
 
@@ -75,53 +89,117 @@ build() {
         return 1
     }
 
+    opts_files=($(ls $(dirname $f)/options* 2>/dev/null))
+    if [[ -n "${opts_files[@]}" ]]; then
+        for of in ${opts_files[@]}; do
+            (
+                source $of
+                build_s2 $f $of
+            )
+        done
+    else
+        build_s2 $f
+    fi
+
+}
+
+# 构建镜像
+# $1 目录或Dockerfile路径
+build_s2() {
+    local f=$1
+    local of=$2
+
     local dockerfile=$(basename $f)
     local build_dir=$(dirname $f)
     local image=${build_dir%%\/*}
-    suite=${build_dir##*\/}
 
-    [[ "$suite" == "$build_dir" ]] && suite=""
+    [[ -n "$BUILD_TAGS" ]] && suite=($BUILD_TAGS) || suite=(${build_dir##*\/})
+
+    [[ "$suite" == "$build_dir" ]] && suite=("latest")
 
     local tag=$(get_local_tag $image $suite)
 
     echo_green "Building $tag for context $build_dir[$dockerfile]"
     echo_green_split
-    if is_true $VERBOSE; then
+    if is_true $CMD_VERBOSE; then
         echo_green "arch:       $ARCH"
         echo_green "filepath:   $f"
         echo_green "build_dir:  $build_dir"
         echo_green "dockerfile: $dockerfile"
+        [[ -n "$of" ]] && \
+        echo_green "options:    $of"
         echo_green "image:      $image"
         echo_green "suite:      ${suite:-latest}"
-        echo_green "local tag:  $tag"
-        echo_green "push tag:   $(get_push_tag $image $suite)"
+        echo_green "L => S:     $(get_local_tag $image ${suite[0]}) => $(get_push_tag $image ${suite[0]})"
+        for s in ${suite[@]:1}; do
+            echo_green "            $(get_local_tag $image $s) => $(get_push_tag $image $s)"
+        done
         echo_green_split
     fi
 
-    if ! is_true $SPECIFIED && is_build_ignored $image $suite; then
-        echo_red_split "Build $tag ignored."
-    else
-        local build_opt=
-        is_true $FORCE_BUILD && build_opt="$build_opt --no-cache"
-        is_true $QUIET && build_opt="$build_opt --quiet"
-        [[ -n "$BUILD_ARGS" ]] && {
-            for a in $BUILD_ARGS; do
-                build_opt="$build_opt --build-arg $a"
-            done
-        }
-        # echo $build_opt
-        if run_cmd docker build --rm --force-rm --network=host $build_opt -t $tag -f $f $build_dir; then
-            echo_green_split "Successfully built $tag with context $image"
 
-            if is_true $PUSH; then
-                push "$image" "$suite"
-            fi
-        else
-            echo_red_split "Build $tag with context $image fail."
+    if ! is_true $SPECIFIED; then
+        local new_suite=()
+        for s in ${suite[@]}; do
+            is_build_ignored $image $s && \
+                echo_red_split "Build $(get_local_tag $image $s) ignored." || \
+                new_suite=(${new_suite[@]} $s)
+        done
+        if [[ -z "${new_suite[@]}" ]]; then
+            return 0
         fi
+        suite=(${new_suite[@]})
+    fi
+
+    local build_opts="$CMD_BUILD_OPTS $BUILD_OPTIONS"
+    is_true $CMD_FORCE && build_opts="$build_opts --no-cache"
+    is_true $CMD_QUIET && build_opts="$build_opts --quiet"
+
+    BUILD_ARGS="$BUILD_ARGS $CMD_BUILD_ARGS"
+    [[ -n "$BUILD_ARGS" ]] && {
+        for a in $BUILD_ARGS; do
+            build_opts="$build_opts --build-arg $a"
+        done
+    }
+
+    for s in ${suite[@]}; do
+        build_opts="$build_opts -t $(get_local_tag $image $s)"
+    done
+
+    # echo $build_opts
+    if run_cmd docker build --rm --force-rm  --network=host $build_opts -f $f $build_dir; then
+        echo_green_split "Successfully built $tag with context $image"
+
+        if is_true $CMD_PUSH; then
+            for s in ${suite[@]}; do
+                push "$image" "$s"
+            done
+        fi
+    else
+        echo_red_split "Build $tag with context $image fail."
     fi
     echo
     echo
+}
+
+try_run_cmd() {
+    local cmd="$1"
+    local max=$2
+
+    [[ -z "$max" ]] && max=5
+
+    local n=0
+    local run_success=
+    until [ $n -ge $max ]; do
+        run_cmd "$cmd" && {
+            return 0
+            break
+        }
+        echo "Try #$n failed... sleeping for 5 seconds"
+        n=$[$n+1]
+        sleep 5
+    done
+    return 1
 }
 
 push() {
@@ -137,26 +215,52 @@ push() {
         return 0
     fi
 
+    echo_green_split "Pushing $tag_push_desc"
+
     # 标记一个push的临时tag
     run_cmd docker tag $tag $push_tag
 
-    echo_green_split "Pushing $tag_push_desc"
-    local n=0
-    local pushed=
-    until [ $n -ge 5 ]; do
-        run_cmd docker push $push_tag && {
-            echo_green_split "Successfully push $tag_push_desc"
-            pushed=1
-            break
-        }
-        echo "Try #$n failed... sleeping for 5 seconds"
-        n=$[$n+1]
-        sleep 5
-    done
-    [[ -z "$pushed" ]] && echo_red_split "Push $tag_push_desc fail."
+    try_run_cmd "docker push $push_tag"
+    local push_ret=$?
 
     # 删除临时标记
     run_cmd docker image rm $push_tag
+
+    [[ $push_ret == 0 ]] && {
+        echo_green_split "Successfully push $tag_push_desc"
+        if is_true $CMD_MANIFEST; then
+            manifest $image $suite
+        fi
+    } || {
+        echo_red_split "Push $tag_push_desc fail."
+    }
+}
+
+manifest() {
+    local image=$1
+    local suite=$2
+    local tpl=
+    local repo=$image:$suite
+
+    [[ "$suite" == "latest" ]] && tpl="$LIBRARY:$image-ARCH" || tpl="$LIBRARY:$image-$suite-ARCH"
+    [[ -n "$USER" ]] && {
+        tpl="$USER/$tpl"
+        repo="$USER/$repo"
+    }
+
+    echo_green_split "MAINFEST $tpl => $repo"
+
+    local mt="docker run --rm -ti -v /var/run/docker.sock:/var/run/docker.sock -v /root/.docker:/root/.docker jinnlynn/manifest-tool"
+
+    try_run_cmd "$mt push from-args --platforms linux/amd64,linux/arm --template $tpl --target $repo"
+    local manifest_ret=$?
+
+    [[ $push_ret == 0 ]] && {
+        echo_green_split "Successfully manifest $tpl => $repo"
+    } || {
+        echo_red_split "Manifest $tpl => $repo fail."
+    }
+
 }
 
 detect_dockerfile() {
@@ -168,6 +272,10 @@ detect_dockerfile() {
 
 build_all() {
     local dirs=$(find_dirs)
+    dirs=($ALL_BUILD_PRIORITY ${dirs[@]})
+    # 去重
+    dirs=($(awk -v RS=' ' '!a[$1]++' <<< ${dirs[@]}))
+
     for d in ${dirs[@]}; do
         build "$d"
     done
@@ -237,30 +345,39 @@ while (( ${#} )); do
             check_param "--user|-u" $USER true
             ;;
         --push|-p )
-            PUSH=true
+            CMD_PUSH=true
+            ;;
+        --manifest|-m )
+            CMD_PUSH=true
+            CMD_MANIFEST=true
             ;;
         --build-arg )
             shift 1
             arg=${1:-}
-            [[ -n "$arg" ]] && BUILD_ARGS="$BUILD_ARGS $arg"
+            [[ -n "$arg" ]] && CMD_BUILD_ARGS="$CMD_BUILD_ARGS $arg"
+            ;;
+        --build-opt )
+            shift 1
+            arg=${1:-}
+            [[ -n "$arg" ]] && CMD_BUILD_OPTS="$CMD_BUILD_OPTS $arg"
             ;;
         --proxy| -x)
             shift 1
             arg=${1:-}
-            [[ -n "$arg" ]] && BUILD_ARGS="$BUILD_ARGS http_proxy=$arg https_proxy=$arg"
+            [[ -n "$arg" ]] && CMD_BUILD_ARGS="$CMD_BUILD_ARGS http_proxy=$arg https_proxy=$arg"
             ;;
         --force|-f )
-            FORCE_BUILD=true
+            CMD_FORCE=true
             ;;
         --verbose|-v )
-            VERBOSE=true
+            CMD_VERBOSE=true
             ;;
         --dry-run|-d)
-            DRY_RUN=true
-            VERBOSE=true
+            CMD_DRY_RUN=true
+            CMD_VERBOSE=true
             ;;
         --quiet|-q)
-            QUIET=true
+            CMD_QUIET=true
             ;;
         --help|-h )
             usage
@@ -279,16 +396,16 @@ done
 
 ARCH=$(arch_go_mark)
 
-BUILD_ARGS=$(echo $BUILD_ARGS)
+CMD_BUILD_ARGS=$(echo $CMD_BUILD_ARGS)
 
-is_true $VERBOSE && {
+is_true $CMD_VERBOSE && {
     echo
     echo "USER:        $USER"
     echo "ARCH:        $ARCH"
-    echo "PUSH:        $PUSH"
-    echo "FORCE_BUILD: $FORCE_BUILD"
-    echo "DRY_RUN:     $DRY_RUN"
-    echo "BUILD_ARGS:  $BUILD_ARGS"
+    echo "PUSH:        $CMD_PUSH"
+    echo "FORCE:       $CMD_FORCE"
+    echo "DRY_RUN:     $CMD_DRY_RUN"
+    echo "BUILD_ARGS:  $CMD_BUILD_ARGS"
     echo "FILE/DIR:    $@"
     echo
 }

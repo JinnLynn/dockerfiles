@@ -2,11 +2,14 @@ FROM jinnlynn/alpine
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
-ARG VERSION="0.22.0"
+ARG VERSION="0.27.1"
 
 RUN set -ex && \
     DLINK="https://github.com/fatedier/frp/releases/download/v${VERSION}/frp_${VERSION}_linux_$(arch).tar.gz" && \
-    wget -O- $DLINK | tar xz --strip-components 1 --exclude */LICENSE -C /app/bin
+    cd /app/bin && \
+    wget -O- $DLINK | tar xz --strip-components 1 --exclude */LICENSE && \
+    chown root:root frp* && \
+    mv *.ini /app/etc/
 
 EXPOSE 80 443 7000 7500
 

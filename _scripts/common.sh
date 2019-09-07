@@ -62,7 +62,7 @@ find_dirs() {
 }
 
 run_cmd() {
-    is_true $DRY_RUN && echo "$@" && return 0
+    is_true $CMD_DRY_RUN && echo "$@" && return 0
     $@
 }
 

@@ -1,9 +1,9 @@
-FROM jinnlynn/alpine
+FROM jinnlynn/git
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
 RUN set -ex && \
-    apk add --no-cache openssh git && \
+    apk add --no-cache openssh && \
     rm -rf /etc/ssh/ssh_host_*_key /etc/motd
 
 COPY entrypoint.sh /app/bin/entrypoint

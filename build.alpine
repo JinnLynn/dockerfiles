@@ -19,7 +19,7 @@ if [[ -n "$ALPINE_LATEST" ]]; then
 fi
 
 
-DOCKERFILE=$(dirname $0)/alpine/_Dockerfile
+DOCKERFILE=$(dirname $0)/alpine/Dockerfile
 
 TAG_BASE="alpine"
 

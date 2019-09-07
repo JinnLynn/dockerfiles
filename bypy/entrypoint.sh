@@ -1,14 +1,22 @@
 #!/usr/bin/env sh
-INTERVAL=${BYPY_INTERVAL:-6h}
-SYNCDIR=${BYPY_SYNCDIR:-/app/mnt}
-
-PROCESSES=${BYPY_PROCESSES:-1}
-DELETE_REMOTE=${BYPY_DELETE_REMOTE-true}
-DEBUG="$BYPY_DEBUG"
-# 同步目录最小大小，只有大于该值才同步，防止挂载失败
-SYNCDIR_MIN_SIZE=${BYPY_SYNCDIR_MIN_SIZE:-1024}
+CONFIG_DIR=${BYPY_CONFIG_DIR:-""}
+# 同步类型 up down
+SYNC_TYPE=${BYPY_SYNC_TYPE:-up}
+# 同步间隔
+SYNC_INTERVAL=${BYPY_SYNC_INTERVAL:-6h}
+# 同步的本地目录列表
+# 无论是向上同步还是向下同步，百度云盘上的目录都以本地目录名为准
+# 如 同步本地目录 /mnt/media 则百度盘上的目录为 /apps/bypy/media
+SYNC_DIRS=${BYPY_SYNC_DIRS:-""}
+# 同步时是否删除源不存在的文件
+SYNC_DELETE=${BYPY_SYNC_DELETE-true}
+# 同步命令参数
+SYNC_OPTS=${BYPY_SYNC_OPTS:-"-vvvv"}
 
 is_trap_sync=
+
+BYPY="bypy"
+[[ -n "$CONFIG_DIR" ]] && BYPY="$BYPY --config-dir $CONFIG_DIR"
 
 echo_line() {
     echo "========================================"
@@ -24,60 +32,53 @@ log_line() {
 }
 
 backup() {
-    local bak_dir="/root/.bypy/bak/$(date +%Y%m%d%H%M%S)"
+    local cfg_dir="$CONFIG_DIR"
+    [[ -z "$cfg_dir" ]] && cfg_dir=$HOME/.bypy
+    bak_dir="$cfg_dir/bak/$(date +%Y%m%d%H%M%S)"
+
     mkdir -p $bak_dir
-    cp /root/.bypy/*.* $bak_dir/
-    # 删除久的备份
+    cp $cfg_dir/*.* $bak_dir/
+    # 删除旧的备份
     find $(dirname $bak_dir) -maxdepth 1 -mindepth 1 -type d -mtime +2 -exec rm -rf {} \;
 }
 
 pre_sync() {
     backup
     echo_line
-    log "Syncup start..."
-    bypy info
+    log "Sync $SYNC_TYPE start..."
+    $BYPY info
     echo_line
 }
 
 post_sync() {
     echo
     echo_line
-    bypy info
-    log "Syncup finished, wait $INTERVAL for next."
+    $BYPY info
+    log "Sync $SYNC_TYPE finished, wait $SYNC_INTERVAL for next."
     echo_line
     echo
 }
 
 sync() {
-    cd $SYNCDIR
-
-    opts="-vvvv"
-    [ -n "$DEBUG" ] && opts="$opts -d"
-    [ "$PROCESSES" -ge 2 ] && opts="$opts --processes $PROCESSES"
-    del_remote=""
-    [ -n "$DELETE_REMOTE" ] && del_remote="true"
-
     pre_sync
 
-    # 各个文件目录分别处理，防止个别目录未成功挂载内容
-    for d in $(ls); do
-        echo
-        # 文件
-        if [ ! -d "$d" ]; then
-            log_line "UPLOAD: $(pwd)/$d => /app/bypy/$d"
-            bypy $opts upload $d $d true
+    for path in $SYNC_DIRS; do
+        name=$(basename $path)
+
+        # 只处理目录
+        if [ ! -d "$path" ]; then
+            log_line "ERROR: $d is not a directory." 2>&1
             continue
         fi
 
-        # 目录
-        used=$(du -s "$d" 2>/dev/null | awk '{print $1}')
-        if [ "$used" -lt $SYNCDIR_MIN_SIZE ] 2>/dev/null; then
-            # 占用空间过小，可能没挂载内容，跳过
-            log_line "SKIPPED: $(pwd)/$d disk space used only ${used}K."
-            continue
+
+        if [ "$SYNC_TYPE" == 'down' ]; then
+            log_line "SYNC DOWN: /app/bypy/$name => $path"
+            $BYPY $SYNC_OPTS syncdown $name $path $SYNC_DELETE
+        else
+            log_line "SYNC UP: $path => /app/bypy/$name"
+            $BYPY $SYNC_OPTS syncup $path $name $SYNC_DELETE
         fi
-        log_line "SYNCUP: $(pwd)/$d => /app/bypy/$d"
-        bypy $opts syncup $d $d $del_remote
     done
 
     post_sync
@@ -92,16 +93,15 @@ trap_sync() {
     sync
 }
 
-echo "SYNCDIR: $SYNCDIR"
-echo "INTERVAL: $INTERVAL"
-echo "PROCESSES: $PROCESSES"
-echo "DELETE_REMOTE: $DELETE_REMOTE"
-echo "SYNCDIR_MIN_SIZE: ${SYNCDIR_MIN_SIZE}"
-echo "DEBUG: $DEBUG"
+echo "SYNC_TYPE:     $SYNC_TYPE"
+echo "SYNC_DIRS:     $SYNC_DIRS"
+echo "SYNC_INTERVAL: $SYNC_INTERVAL"
+echo "CONFIG_DIR:    $CONFIG_DIR"
+echo "SYNC_OPTS:     $SYNC_OPTS"
+echo "SYNC_DELETE:   $SYNC_DELETE"
 
-if [ ! -d "$SYNCDIR" ]; then
-    echo_line
-    log "ERROR: $SYNCDIR is not a directory." 2>&1
+if [ -z "$SYNC_DIRS" ]; then
+    log_line "ERROR: \$SYNC_DIRS is empty." 2>&1
     exit 1
 fi
 
@@ -113,7 +113,7 @@ while :; do
         sync
     fi
     is_trap_sync=
-    sleep $INTERVAL &
+    sleep $SYNC_INTERVAL &
     pid=$!
     wait $pid
     kill -9 $pid 1>/dev/null 2>&1

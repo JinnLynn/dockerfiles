@@ -1,4 +1,4 @@
-# 树莓派网关上运行的服务
+# 树莓派网关上运行的服务 172.16.10.11 -
 # 翻墙(匿名代理): gfw-client.yml, 同时加载即可
 # 其它服务:
 # 内网穿透客户端  流量统计 下载    web   git     DLNA      dnsmasq配置监控更新
@@ -9,8 +9,10 @@ services:
         image: jinnlynn/frp
         restart: always
         network_mode: host
+        depends_on:
+            - dnsmasq
         volumes:
-            - ${KITS}/etc/frp/:/app/etc/
+            - ${KITS}/etc/frp:/app/etc
         command: frpc -c /app/etc/frpc.ini
     ddns:
         image: jinnlynn/ddns
@@ -43,22 +45,6 @@ services:
         network_mode: host
         volumes:
             - ${KITS_LOCAL}/vnstat:/var/lib/vnstat
-    aria2:
-        image: jinnlynn/aria2
-        restart: unless-stopped
-        networks:
-            default:
-                ipv4_address: 172.16.0.11
-        logging:
-            options:
-                max-size: 1m
-        ports:
-            - 6900:6900
-            - 6901:6901/udp
-        volumes:
-            - ${KITS}/etc/aria2:/app/etc
-            - ${KITS}/var/run/aria2:/app/run
-            - /cellar/mnt/download/aria2:/app/local
     nginx:
         image: jinnlynn/nginx
         restart: always
@@ -66,63 +52,27 @@ services:
             options:
                 max-size: 1m
         ports:
-            - 6800:6800
-            - 5580:5580
+            - 80:80
+            - 443:443
         volumes:
             - ${KITS}/etc/nginx/default.conf:/etc/nginx/conf.d/default.conf
             - ${KITS_LOCAL}/dehydrated/certs:/etc/nginx/certs
-    gitsrv:
-        image: jinnlynn/git-server
-        restart: always
-        networks:
-            default:
-                ipv4_address: 172.16.0.12
-        volumes:
-            - /cellar/mnt/repo/git:/app/local
-            - ${KITS}/etc/docker/jkey.pub:/app/etc/jkey.pub
-            - /etc/ssh/ssh_host_dsa_key:/etc/ssh/ssh_host_dsa_key
-            - /etc/ssh/ssh_host_ecdsa_key:/etc/ssh/ssh_host_ecdsa_key
-            - /etc/ssh/ssh_host_ed25519_key:/etc/ssh/ssh_host_ed25519_key
-            - /etc/ssh/ssh_host_rsa_key:/etc/ssh/ssh_host_rsa_key
-    minidlna:
-        image: jinnlynn/minidlna
-        restart: always
-        network_mode: host
-        logging:
-            options:
-                max-size: 1m
-        environment:
-            MINIDLNA_WATCH_INTERVAL: 6h
-        volumes:
-            - ${KITS_LOCAL}/minidlna:/app/local
-            - /cellar/mnt/media:/app/mnt/media
-    bypy:
-        image: jinnlynn/bypy
-        restart: always
-        logging:
-            options:
-                max-size: 1m
-        volumes:
-            - ${KITS_LOCAL}/bypy:/root/.bypy
-            - /cellar/mnt/media:/app/mnt/nas-media
-            - /cellar/mnt/documents/Shared/Software:/app/mnt/nas-apps
+
     # gogs:
     #     image: jinnlynn/gogs:armhf
     #     restart: always
     #     networks:
     #         default:
-    #             ipv4_address: 172.16.0.12
+    #             ipv4_address: 172.16.10.12
     #     ports:
     #         # - "9980:3000" # web 端口不外放 通过nginx反向代理
     #         - "9922:2222"
     #     volumes:
     #         - ${KITS}/etc/gogs:/app/etc
     #         - ${KITS_LOCAL}/gogs:/app/local
-volumes:
-    vdata:
 networks:
     default:
         driver: bridge
         ipam:
             config:
-                - subnet: 172.16.0.0/24
+                - subnet: 172.16.10.0/24

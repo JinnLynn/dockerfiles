@@ -13,7 +13,7 @@ fi
 
 # 指定了命令
 if [ "${1:0:1}" = '-' ]; then
-    set -- aria2c "$@"
+    set -- aria2c $@
 fi
 
 exec $@

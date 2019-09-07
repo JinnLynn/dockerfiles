@@ -1,4 +1,4 @@
-FROM jinnlynn/alpine:3.7
+FROM jinnlynn/alpine:3.9
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
@@ -15,6 +15,7 @@ RUN set -ex && \
                     autoconf \
                     linux-headers \
                     openssl-dev \
+                    zlib-dev \
                     pcre-dev && \
     curl -SL $SS_URL | tar xz --strip 1 && \
     ./configure --prefix=/usr --disable-documentation && \

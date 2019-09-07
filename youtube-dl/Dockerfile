@@ -1,13 +1,15 @@
-FROM jinnlynn/python
+FROM jinnlynn/python:3
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
+RUN set -ex && \
+    apk add --no-cache ffmpeg ca-certificates aria2
+
 # pip将安装 >= $VERSION 的版本
-ARG VERSION="2019.1.10"
+ARG VERSION="2019.8.2"
 
 RUN set -ex && \
-    pip install -U --no-cache-dir pip "youtube-dl${VERSION:+>=}${VERSION}" && \
-    apk add --no-cache ffmpeg ca-certificates aria2
+    pip install -U --no-cache-dir pip "youtube-dl${VERSION:+>=}${VERSION}"
 
 ENTRYPOINT ["youtube-dl", "--external-downloader", "aria2c", "--external-downloader-args", "--file-allocation=none --summary-interval=0"]
 

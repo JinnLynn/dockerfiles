@@ -2,7 +2,7 @@ FROM jinnlynn/alpine
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
-ARG VERSION=0.6.2
+ARG VERSION=0.6.5
 
 # alpine中的awk, grep等命令为busybox版本不适合dehydrated，需另外安装
 RUN set -ex && \
