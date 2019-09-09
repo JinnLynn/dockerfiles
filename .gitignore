@@ -1,4 +1,5 @@
 _tmp/**
+_removed/**
 
 genpac-server/
 genpac-watch/
