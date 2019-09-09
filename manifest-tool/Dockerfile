@@ -2,7 +2,7 @@ FROM jinnlynn/alpine
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
-ARG VERSION=0.9.0
+ARG VERSION=1.0.0
 
 RUN set -ex && \
     apk add --no-cache ca-certificates && \
