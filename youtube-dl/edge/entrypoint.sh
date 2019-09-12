@@ -3,7 +3,7 @@
 cd ${REPO_DIR}
 
 # 更新
-git pull --depth 1 -f --recurse-submodules -q
+git pull --depth 1 -f --recurse-submodules -q -r 2>/dev/null
 
 cd - >/dev/null
 
