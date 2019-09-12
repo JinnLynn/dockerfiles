@@ -14,7 +14,7 @@
 USER=${DOCKER_USER:-}
 [[ -z "$USER" ]] && USER=$(docker info 2>/dev/null | grep Username | awk '{print $2}')
 # 构建所有镜像时的优先顺序
-ALL_BUILD_PRIORITY=${DOCKER_ALL_BUILD_PRIORITY:-"alpine ubuntu  httpd python python/3 flask php php/fpm node"}
+ALL_BUILD_PRIORITY=${DOCKER_ALL_BUILD_PRIORITY:-"alpine ubuntu httpd python python/3 flask php php/fpm node"}
 
 
 CMD_PUSH=false
@@ -114,7 +114,8 @@ build_s2() {
     local build_dir=$(dirname $f)
     local image=${build_dir%%\/*}
 
-    [[ -n "$BUILD_TAGS" ]] && suite=($BUILD_TAGS) || suite=(${build_dir##*\/})
+
+    [[ -n "$OPT_BUILD_TAGS" ]] && suite=($OPT_BUILD_TAGS) || suite=(${build_dir##*\/})
 
     [[ "$suite" == "$build_dir" ]] && suite=("latest")
 
@@ -129,8 +130,10 @@ build_s2() {
         echo_green "dockerfile: $dockerfile"
         [[ -n "$of" ]] && \
         echo_green "options:    $of"
+        [[ -n "$OPT_BUILD_DEPENDS" ]] && \
+        echo_green "depends:    $OPT_BUILD_DEPENDS"
         echo_green "image:      $image"
-        echo_green "suite:      ${suite:-latest}"
+        echo_green "suite:      ${suite[@]:-latest}"
         echo_green "L => S:     $(get_local_tag $image ${suite[0]}) => $(get_push_tag $image ${suite[0]})"
         for s in ${suite[@]:1}; do
             echo_green "            $(get_local_tag $image $s) => $(get_push_tag $image $s)"
@@ -152,11 +155,19 @@ build_s2() {
         suite=(${new_suite[@]})
     fi
 
-    local build_opts="$CMD_BUILD_OPTS $BUILD_OPTIONS"
+    [[ -n "$OPT_BUILD_DEPENDS" ]] && {
+        for img in ${OPT_BUILD_DEPENDS[@]}; do
+            echo_green "Pull Dependent Image[$img]..."
+            run_cmd docker pull $img
+        done
+        echo_green_split
+    }
+
+    local build_opts="$CMD_BUILD_OPTS $OPT_BUILD_OPTIONS"
     is_true $CMD_FORCE && build_opts="$build_opts --no-cache"
     is_true $CMD_QUIET && build_opts="$build_opts --quiet"
 
-    BUILD_ARGS="$BUILD_ARGS $CMD_BUILD_ARGS"
+    BUILD_ARGS="$OPT_BUILD_ARGS $CMD_BUILD_ARGS"
     [[ -n "$BUILD_ARGS" ]] && {
         for a in $BUILD_ARGS; do
             build_opts="$build_opts --build-arg $a"

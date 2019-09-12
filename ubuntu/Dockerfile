@@ -1,4 +1,5 @@
-FROM ubuntu
+ARG BASE
+FROM ${BASE}
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
