@@ -7,6 +7,6 @@ RUN set -ex && \
 
 COPY entrypoint.sh /app/bin/entrypoint
 
-EXPOSE 6800
+EXPOSE 6800 6900 6900/udp 6901 6900/udp
 
 ENTRYPOINT ["entrypoint"]
