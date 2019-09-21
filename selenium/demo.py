@@ -6,7 +6,7 @@ import time
 
 from selenium.webdriver import Chrome, ChromeOptions
 
-print('Docker & Alpine & Chrome & Selenium Demo...')
+print('Docker & Chrome & Selenium Demo...')
 
 options = ChromeOptions()
 #! 必须带此参数 否则无法正常启动
