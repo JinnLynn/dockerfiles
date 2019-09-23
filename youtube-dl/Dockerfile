@@ -11,6 +11,6 @@ ARG VERSION="2019.8.2"
 RUN set -ex && \
     pip install -U --no-cache-dir pip "youtube-dl${VERSION:+>=}${VERSION}"
 
-ENTRYPOINT ["youtube-dl", "--external-downloader", "aria2c", "--external-downloader-args", "--file-allocation=none --summary-interval=0"]
+ENTRYPOINT ["youtube-dl", "--external-downloader", "aria2c", "--external-downloader-args", "--file-allocation=none --summary-interval=0 --max-connection-per-server=16"]
 
 CMD ["--help"]

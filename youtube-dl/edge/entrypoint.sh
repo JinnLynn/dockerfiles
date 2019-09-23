@@ -8,5 +8,5 @@ git pull --depth 1 -f --recurse-submodules -q -r 2>/dev/null
 cd - >/dev/null
 
 exec youtube-dl --external-downloader aria2c \
-                --external-downloader-args "--file-allocation=none --summary-interval=0" \
+                --external-downloader-args "--file-allocation=none --summary-interval=0 --max-connection-per-server=16" \
                 $@
