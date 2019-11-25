@@ -24,8 +24,8 @@ RUN set -ex && \
     chmod +x /app/bin/arch /app/bin/cleanup && \
     apt-get update -qy && \
     apt-get install -qy apt-transport-https ca-certificates tzdata && \
-    cp /usr/share/zoneinfo/$TIMEZONE /etc/localtime && \
-    echo "$TIMEZONE" >/etc/timezone && \
+    rm -rf /etc/localtime && \
+    cp /usr/share/zoneinfo/${TIMEZONE} /etc/localtime && \
     apt-get remove -qy tzdata && \
     ARCH=$(arch) && \
     [ "${ARCH:0:3}" == "arm" ] && MIRROR=$MIRROR_PORTS || true && \
