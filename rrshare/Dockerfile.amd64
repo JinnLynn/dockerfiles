@@ -1,0 +1,18 @@
+FROM jinnlynn/ubuntu
+
+LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
+
+ARG DLINK=http://appdown.rrys.tv/rrshareweb_centos7.tar.gz
+
+RUN set -ex && \
+    DEBIAN_FRONTEND=noninteractive && \
+    apt-get update && \
+    apt-get install -qy wget && \
+    wget -O- ${DLINK} | tar xz -C /app/opt/ && \
+    chmod -R 777 /app/opt/rrshareweb/conf && \
+    apt-get remove -qy wget && \
+    cleanup
+
+VOLUME /app/opt/rrshareweb/conf/
+
+CMD ["/app/opt/rrshareweb/rrshareweb"]
