@@ -1,0 +1,14 @@
+#!/usr/bin/env sh
+. ~/git-shell-commands/_common.sh
+
+cat <<EOF
+
+COMMANDS:
+
+init REPO[.git]             Create an empty Git repository
+ls                          List all repositories
+mv SRC[.git] DST[.git]      Move or rename repository
+rm REPO[.git]               Remove repository
+stat REPO[.git]             Repository statistics
+
+EOF

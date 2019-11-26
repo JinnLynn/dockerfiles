@@ -1,18 +1,20 @@
-FROM jinnlynn/alpine
+FROM jinnlynn/git
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
-ENV GITWEB_CONFIG=/app/etc/gitweb.conf
+ENV GITWEB_CONFIG=/app/etc/gitweb.conf  \
+    GIT_USER=git GIT_USER_ID=1000       \
+    GIT_GROUP=git GIT_GROUP_ID=1000
 
 RUN set -ex && \
-    apk add git-gitweb lighttpd highlight perl-cgi gettext && \
-    cp /usr/bin/envsubst /usr/local/bin/envsubst && \
-    wget -O- https://github.com/kogakure/gitweb-theme/archive/master.tar.gz | tar xz -C /usr/share/gitweb/static --strip-components 1 --exclude */.gitignore --exclude */README.* --exclude */setup && \
-    apk del gettext
+    apk add git-gitweb lighttpd highlight perl-cgi && \
+    wget -O- https://github.com/kogakure/gitweb-theme/archive/master.tar.gz | tar xz \
+        -C /usr/share/gitweb/static --strip-components 1                             \
+        --exclude */.gitignore --exclude */README.* --exclude */setup && \
+    echo 'include "/app/etc/lighttpd.conf"' >>/etc/lighttpd/lighttpd.conf
 
 COPY entrypoint.sh /app/bin/entrypoint
-COPY gitweb.conf.tpl /app/etc/
-COPY lighttpd.conf /etc/lighttpd/
+COPY gitweb.conf lighttpd.conf /app/etc/
 
 EXPOSE 80
 

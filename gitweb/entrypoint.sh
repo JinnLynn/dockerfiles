@@ -1,19 +1,30 @@
 #!/bin/sh
-# 必须export 否则envsubst无法获取值
-export GITWEB_CONFIG=${GITWEB_CONFIG:-"/app/etc/gitweb.conf"}
+GITWEB_CONFIG=${GITWEB_CONFIG:-"/app/etc/gitweb.conf"}
 
-export PROJECT_ROOT=${PROJECT_ROOT:-"/app/mnt/repo"}
-export FEATURE_SEARCH=${FEATURE_SEARCH:-1}
-export FEATURE_HIGHLIGHT=${FEATURE_HIGHLIGHT:-1}
-export FEATURE_AVATAR=${FEATURE_AVATAR:-gravatar}
-export FEATURE_BLAME=${FEATURE_BLAME:-0}
-export FEATURE_SNAPSHOT=${FEATURE_SNAPSHOT:-none}
+GIT_USER=${GIT_USER:-git}
+GIT_USER_ID=${GIT_USER_ID:-1000}
+GIT_GROUP=${GIT_GROUP:-git}
+GIT_GROUP_ID=${GIT_GROUP_ID:-1000}
 
-envsubst '$PROJECT_ROOT $FEATURE_SEARCH $FEATURE_BLAME $FEATURE_HIGHLIGHT $FEATURE_AVATAR $FEATURE_SNAPSHOT' \
-    </app/etc/gitweb.conf.tpl >$GITWEB_CONFIG
+# Check if user exists
+if ! id -u ${GIT_USER} > /dev/null 2>&1; then
+	echo "The user ${GIT_USER} does not exist, creating..."
+	addgroup -g ${GIT_GROUP_ID} ${GIT_GROUP}
+	adduser -u ${GIT_USER_ID} -G ${GIT_GROUP} -D -s /usr/bin/git-shell ${GIT_USER}
+    rand_pwd=$(cat /proc/sys/kernel/random/uuid | awk -F '-' '{print $1}')
+    echo "${GIT_USER}:$rand_pwd" | chpasswd 2>/dev/null
+fi
 
-cat $GITWEB_CONFIG
+# := 语法: 更新已设置的值
+# REF: https://redmine.lighttpd.net/projects/lighttpd/repository/revisions/367e62c1c29e143267f40e3672d4869d79bfb58d
+cat <<EOF >/app/etc/lighttpd-user.conf
+server.username  := "${GIT_USER}"
+server.groupname := "${GIT_GROUP}"
+EOF
 
-echo $@
+chown -R ${GIT_USER}:${GIT_GROUP}   \
+    /var/www/localhost              \
+    /var/log/lighttpd               \
+    /var/lib/lighttpd 2>/dev/null
 
 exec $@

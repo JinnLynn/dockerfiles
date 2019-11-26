@@ -1,5 +1,21 @@
 #!/bin/sh
-user=${GIT_USER:-git}
+GIT_USER=${GIT_USER:-git}
+GIT_USER_ID=${GIT_USER_ID:-1000}
+GIT_GROUP=${GIT_GROUP:-git}
+GIT_GROUP_ID=${GIT_GROUP_ID:-1000}
+
+# Check if user exists
+if ! id -u ${GIT_USER} > /dev/null 2>&1; then
+	echo "The user ${GIT_USER} does not exist, creating..."
+	addgroup -g ${GIT_GROUP_ID} ${GIT_GROUP}
+	adduser -u ${GIT_USER_ID} -G ${GIT_GROUP} -D -s /usr/bin/git-shell ${GIT_USER}
+    rand_pwd=$(cat /proc/sys/kernel/random/uuid | awk -F '-' '{print $1}')
+    echo "${GIT_USER}:$rand_pwd" | chpasswd 2>/dev/null
+
+    mkdir -p /home/${GIT_USER}/.ssh
+    chmod 700 /home/${GIT_USER}/.ssh
+    chown -R ${GIT_USER}:${GIT_GROUP} /home/${GIT_USER}/.ssh
+fi
 
 # check host key
 for k in rsa dsa ecdsa ed25519; do
@@ -13,27 +29,20 @@ done
 # 禁止密码登陆
 sed -i s/#PasswordAuthentication.*/PasswordAuthentication\ no/ /etc/ssh/sshd_config
 
-# git 用户
-if ! cat /etc/passwd | grep -q ^$user; then
-    adduser -D -s /usr/bin/git-shell $user
-    rand_pwd=$(cat /proc/sys/kernel/random/uuid | awk -F '-' '{print $1}')
-    echo "$user:$rand_pwd" | chpasswd
-    mkdir -p /home/$user/.ssh
-    ln -sf /app/etc/git-shell-commands /home/$user/git-shell-commands
-    chown -R $user:$user /home/$user /home/$user/* /home/$user/.ssh
-    chmod 700 /home/$user/.ssh
-fi
+cd /home/${GIT_USER}
+
+ln -sf /app/etc/git-shell-commands/ .
 
 # ssh pubkey
-rm -rf /home/$user/.ssh/*
+rm -rf .ssh/*
 if [ -n "$(ls /app/etc/*.pub 2>/dev/null)" ]; then
-    cat /app/etc/*.pub >/home/$user/.ssh/authorized_keys 2>/dev/null
+    cat /app/etc/*.pub >.ssh/authorized_keys 2>/dev/null
+    chown ${GIT_USER}:${GIT_GROUP} .ssh/authorized_keys 2>/dev/null
+    chmod 600 .ssh/authorized_keys 2>/dev/null
 fi
-chown -R $user:$user /home/$user/.ssh/* 2>/dev/null
-chmod -R 600 /home/$user/.ssh/* 2>/dev/null
 
 # repo
-chown -R $user:$user /app/local
-ln -sf /app/local /repo
+ln -sf /app/local/ /repo
+chown ${GIT_USER}:${GIT_GROUP} /repo
 
 exec "$@"

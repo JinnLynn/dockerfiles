@@ -1,9 +1,13 @@
 #!/usr/bin/env sh
 git_ver=$(git --version | awk '{print $3}')
 alpine_ver=$(cat /etc/alpine-release)
-echo
-echo "Welcome to git server (git-v$git_ver alpine-v$alpine_ver)"
-echo "You've successfully authenticated, but I do not"
-echo "provide interactive shell access."
-echo
+
+cat <<EOF
+
+Welcome to git server (git-v$git_ver alpine-v$alpine_ver)
+You've successfully authenticated, but I do not
+provide interactive shell access.
+
+EOF
+
 exit 128
