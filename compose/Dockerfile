@@ -2,7 +2,7 @@ FROM jinnlynn/python:3
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
-ARG VERSION=1.24.1
+ARG VERSION=1.25.0
 
 RUN set -ex && \
     apk add --no-cache --virtual .build-deps build-base linux-headers python3-dev libffi-dev openssl-dev && \
