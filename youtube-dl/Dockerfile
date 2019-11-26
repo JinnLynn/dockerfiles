@@ -6,7 +6,7 @@ RUN set -ex && \
     apk add --no-cache ffmpeg ca-certificates aria2
 
 # pip将安装 >= $VERSION 的版本
-ARG VERSION="2019.8.2"
+ARG VERSION="2019.11.22"
 
 RUN set -ex && \
     pip install -U --no-cache-dir pip "youtube-dl${VERSION:+>=}${VERSION}"
