@@ -264,7 +264,7 @@ manifest() {
 
     local mt="docker run --rm -ti -v /var/run/docker.sock:/var/run/docker.sock -v /root/.docker:/root/.docker jinnlynn/manifest-tool"
 
-    try_run_cmd "$mt push from-args --platforms linux/amd64,linux/arm --template $tpl --target $repo"
+    try_run_cmd "$mt push from-args --ignore-missing --platforms linux/amd64,linux/arm --template $tpl --target $repo"
     local manifest_ret=$?
 
     [[ $push_ret == 0 ]] && {
