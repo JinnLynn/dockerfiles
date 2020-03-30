@@ -3,6 +3,8 @@ FROM jinnlynn/ubuntu
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
 ARG DLINK=http://appdown.rrys.tv/rrshareweb_centos7.tar.gz
+# MD5: dc5f0e778f87d36b2da107019d6cf9b2
+# curl -Ls -o- http://appdown.rrys.tv/rrshareweb_centos7.tar.gz | md5sum
 
 RUN set -ex && \
     DEBIAN_FRONTEND=noninteractive && \
