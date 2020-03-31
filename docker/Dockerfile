@@ -2,7 +2,7 @@ FROM jinnlynn/alpine
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
-ARG VERSION=19.03.5
+ARG VERSION=19.03.8
 ARG MIRROR
 
 RUN set -ex && \
