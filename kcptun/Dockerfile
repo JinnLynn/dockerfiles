@@ -2,7 +2,7 @@ FROM jinnlynn/alpine
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
-ARG VERSION="20191112"
+ARG VERSION="20200201"
 ARG ARM="arm7"
 
 RUN set -ex && \
