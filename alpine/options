@@ -1,16 +1,17 @@
 # 配置文件实际上是一个shell脚本 build时通过source引入
+_VERSION=3.11
 
 # 依赖的第三方镜像，当构建时将会先尝试下载以确保最新
 # 注意必须是『第三方』，若是『自己』的镜像可能会出现问题
 # 默认: 无 无依赖
-OPT_BUILD_DEPENDS="alpine"
+OPT_BUILD_DEPENDS="alpine:$_VERSION"
 # 指定构建镜像标签，可以多个
 # 默认: latest
-OPT_BUILD_TAGS="latest 3.10"
+OPT_BUILD_TAGS="latest $_VERSION"
 # 构建时传递给--build-arg的值
 # 默认: 无
-OPT_BUILD_ARGS="BASE=$OPT_BUILD_DEPENDS BRANCH=v3.10"
-# 传递给docker run的选项值
+OPT_BUILD_ARGS="BASE=$OPT_BUILD_DEPENDS BRANCH=v$_VERSION"
+# 传递给docker build的选项值
 # 默认: 无
 OPT_BUILD_OPTIONS=""
 
