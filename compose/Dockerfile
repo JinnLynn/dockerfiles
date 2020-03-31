@@ -1,11 +1,11 @@
-FROM jinnlynn/python:3
+FROM jinnlynn/python
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
 ARG VERSION=1.25.0
 
 RUN set -ex && \
-    apk add --no-cache --virtual .build-deps build-base linux-headers python3-dev libffi-dev openssl-dev && \
+    apk add --no-cache --virtual .build-deps build-base linux-headers $(py_release)-dev libffi-dev openssl-dev && \
     pip install -U --no-cache-dir pip "docker-compose${VERSION:+==}${VERSION}" && \
     apk del --no-cache .build-deps && \
     docker-compose version

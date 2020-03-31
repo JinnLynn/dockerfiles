@@ -14,7 +14,7 @@
 USER=${DOCKER_USER:-}
 [[ -z "$USER" ]] && USER=$(docker info 2>/dev/null | grep Username | awk '{print $2}')
 # 构建所有镜像时的优先顺序
-ALL_BUILD_PRIORITY=${DOCKER_ALL_BUILD_PRIORITY:-"alpine ubuntu httpd python python/3 flask php php/fpm node"}
+ALL_BUILD_PRIORITY=${DOCKER_ALL_BUILD_PRIORITY:-"alpine ubuntu httpd python flask php php/fpm node"}
 
 
 CMD_PUSH=false

@@ -1,3 +1,3 @@
 # docker image python
 
-python2做为latest版本
+python3做为latest版本
