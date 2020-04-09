@@ -49,8 +49,14 @@ update_cnip() {
     ipset list $IPSET_CNIP | grep -e ^[0-9] -q && return
 
     # 下载cnip数据
-    # local dfile=$(_download_cnip_data)
-    # [ -n "$dfile" ] && cat $dfile >$CNIP_FILE
+    local dfile=$(mktemp)
+    curl -sSL "$IPDATA_URI" | awk -F\| '/CN\|ipv4/ { printf("%s/%d\n", $4, 32-log($5)/log(2)) }' > ${dfile} && {
+        local ip_count=$(wc -l ${dfile} | awk '{print $1}')
+        echo "$ip_count routes fetched."
+        echo "# $(date +%Y%m%d) $ip_count routes" >${CNIP_FILE}
+        cat ${dfile} >>$CNIP_FILE
+        rm -rf ${dfile}
+    } || echo "Download ip data fail."
 
     # 添加ip
     cat "$CNIP_FILE" | while read line; do
