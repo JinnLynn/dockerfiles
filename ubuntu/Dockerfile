@@ -10,6 +10,7 @@ ARG TIMEZONE="Asia/Shanghai"
 ARG APP_DIRS="bin etc opt mnt local log tmp var"
 
 ENV PATH=/app/bin:$PATH
+ENV LC_ALL=C.UTF-8
 
 SHELL ["/bin/bash", "-c"]
 
