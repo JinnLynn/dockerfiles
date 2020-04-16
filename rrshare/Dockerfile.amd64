@@ -10,12 +10,19 @@ RUN set -ex && \
     DEBIAN_FRONTEND=noninteractive && \
     DLINK=http://appdown.rrys.tv/rrshareweb_centos7.tar.gz?hash=${HASH} && \
     apt-get update && \
-    apt-get install -qy wget && \
-    wget -O- ${DLINK} | tar xz -C /app/opt/ && \
+    apt-get install -qy curl supervisor jq sqlite3 && \
+    curl -sL -o- ${DLINK} | tar xz -C /app/opt/ && \
     chmod -R 777 /app/opt/rrshareweb/conf && \
-    apt-get remove -qy wget && \
     cleanup
+
+COPY supervisord.conf /app/etc/
+COPY watcher.sh /app/bin/rrshare-watcher
+
+ENV RR_CONF_PATH=/app/opt/rrshareweb/conf
+ENV RR_UNLOCK_PWD=
+ENV RR_MAX_WAIT=600
+
 
 VOLUME /app/opt/rrshareweb/conf/
 
-CMD ["/app/opt/rrshareweb/rrshareweb"]
+CMD ["supervisord", "-c", "/app/etc/supervisord.conf"]
