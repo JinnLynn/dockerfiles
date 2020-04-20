@@ -2,7 +2,7 @@ FROM jinnlynn/node
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
-ARG VERSION="14.2.0"
+ARG VERSION="14.3.10"
 
 RUN set -ex && \
     npm install -g "cloudcmd@>=${VERSION}"
