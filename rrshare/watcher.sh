@@ -1,5 +1,6 @@
 #!/usr/bin/env sh
 
+AUTOSTOP=${RR_AUTOSTOP:-false}
 PASSWD=${RR_UNLOCK_PWD}
 MAX_WAIT=${RR_MAX_WAIT:-600}
 CONF_PATH=${RR_CONF_PATH:-/app/opt/rrshareweb/conf}
@@ -8,6 +9,8 @@ URL="http://127.0.0.1:$(cat $CONF_PATH/rrshare.json | jq .port)"
 # URL="https://rr.me.afvisual.com"
 COOKIE_FILE="/tmp/cookie.txt"
 LAST_TASK_EXISTS=$(date "+%s")
+
+[ "$AUTOSTOP" != "true" ] && AUTOSTOP="false"
 
 log() {
     echo [$(date "+%Y-%m-%d %H:%M:%S")] "$@"
@@ -35,7 +38,7 @@ post() {
 }
 
 check() {
-    local ret
+    [ "$AUTOSTOP" != "true" ] && return
 
     supervisorctl status rrshare | grep -q RUNNING || {
         # rrshare非运行状态
@@ -91,32 +94,12 @@ check() {
     }
 }
 
-ttt() {
-    PASSWD=9527
-    fetch "unlock?passwd=$PASSWD" | jq -e '.code != 200' >/dev/null && {
-        # 解锁失败
-        log "Unlock fail."
-        return
-    }
-
-    local ids
-    ret=$(fetch finishedtask | jq -r '[.tasks[].file_id]|join("\",\"")')
-    [ -n "$ret" ] && {
-        post deletetask "ids=[\"$ret\"]&delfile=0"
-    }
-
-    local save_path=$(fetch getsetting | jq -r .save_path)
-    echo $save_path
-}
-
-
-
-log "CONF PATH: $CONF_PATH"
-log "URL:       $URL"
-log "UNLOCK:    $PASSWD"
+log "AUTOSTOP:  $AUTOSTOP"
 log "MAX WAIT:  $MAX_WAIT"
+log "UNLOCK:    $PASSWD"
+log "URL:       $URL"
+log "CONF PATH: $CONF_PATH"
 
-# ttt
 
 while :; do
     check
