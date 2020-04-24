@@ -3,6 +3,7 @@
 AUTOSTOP=${RR_AUTOSTOP:-false}
 PASSWD=${RR_UNLOCK_PWD}
 MAX_WAIT=${RR_MAX_WAIT:-600}
+INTERVAL=${RR_INTERVAL:-30}
 CONF_PATH=${RR_CONF_PATH:-/app/opt/rrshareweb/conf}
 
 URL="http://127.0.0.1:$(cat $CONF_PATH/rrshare.json | jq .port)"
@@ -11,6 +12,7 @@ COOKIE_FILE="/tmp/cookie.txt"
 LAST_TASK_EXISTS=$(date "+%s")
 
 [ "$AUTOSTOP" != "true" ] && AUTOSTOP="false"
+[ $INTERVAL -le 0 ] && INTERVAL=30
 
 log() {
     echo [$(date "+%Y-%m-%d %H:%M:%S")] "$@"
@@ -96,12 +98,12 @@ check() {
 
 log "AUTOSTOP:  $AUTOSTOP"
 log "MAX WAIT:  $MAX_WAIT"
+log "INTERVAL:  $INTERVAL"
 log "UNLOCK:    $PASSWD"
 log "URL:       $URL"
 log "CONF PATH: $CONF_PATH"
 
-
 while :; do
     check
-    sleep 5
+    sleep $INTERVAL
 done

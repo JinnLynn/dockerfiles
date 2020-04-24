@@ -6,17 +6,17 @@ LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 # curl -Ls -o- http://appdown.rrys.tv/rrshareweb_centos7.tar.gz | md5sum
 ARG HASH=dc5f0e778f87d36b2da107019d6cf9b2
 
-COPY supervisord.conf /app/etc/
-COPY watcher.sh /app/bin/watcher
-
 RUN set -ex && \
     DEBIAN_FRONTEND=noninteractive && \
     DLINK=http://appdown.rrys.tv/rrshareweb_centos7.tar.gz?hash=${HASH} && \
     apt-get update && \
-    apt-get install -qy curl supervisor jq sqlite3 && \
+    apt-get install -qy --no-install-recommends curl supervisor jq sqlite3 && \
     curl -sL -o- ${DLINK} | tar xz -C /app/opt/ && \
     chmod -R 777 /app/opt/rrshareweb/conf && \
     cleanup
+
+COPY supervisord.conf /app/etc/
+COPY watcher.sh /app/bin/watcher
 
 VOLUME /app/opt/rrshareweb/conf/
 
