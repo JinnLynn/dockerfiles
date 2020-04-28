@@ -41,6 +41,8 @@ BASE_DIR=$(realpath $(dirname $0))
 ARCH=
 SPECIFIED=false
 
+ERR_LOG_FILE=$(mktemp)
+
 . $BASE_DIR/_scripts/common.sh
 
 is_ignored() {
@@ -56,6 +58,13 @@ is_build_ignored() {
 
 is_push_ignored() {
     is_ignored P $1 $2
+}
+
+log_error() {
+    echo "$1" >>$ERR_LOG_FILE
+    echo
+    echo_red_split "$1"
+    echo
 }
 
 get_local_tag() {
@@ -86,7 +95,7 @@ build() {
     } || f="$1"
 
     [[ ! -f "$f" ]] && {
-        echo_red_split "$1 Dockerfile missing."
+        log_error "$1 Dockerfile missing."
         return 1
     }
 
@@ -146,7 +155,7 @@ build_s2() {
         local new_suite=()
         for s in ${suite[@]}; do
             is_build_ignored $image $s && \
-                echo_red_split "Build $(get_local_tag $image $s) ignored." || \
+                log_error "Build $(get_local_tag $image $s) ignored." || \
                 new_suite=(${new_suite[@]} $s)
         done
         if [[ -z "${new_suite[@]}" ]]; then
@@ -188,7 +197,7 @@ build_s2() {
             done
         fi
     else
-        echo_red_split "Build $tag with context $image fail."
+        log_error "Build $tag with context $image fail."
     fi
     echo
     echo
@@ -223,7 +232,7 @@ push() {
     local tag_push_desc="$tag => $push_tag"
 
     if ! is_true $SPECIFIED && is_push_ignored $image $tag; then
-        echo_red_split "Push $tag_push_desc ignored."
+        log_error "Push $tag_push_desc ignored."
         return 0
     fi
 
@@ -244,7 +253,7 @@ push() {
             manifest $image $suite
         fi
     } || {
-        echo_red_split "Push $tag_push_desc fail."
+        log_error "Push $tag_push_desc fail."
     }
 }
 
@@ -270,7 +279,7 @@ manifest() {
     [[ $push_ret == 0 ]] && {
         echo_green_split "Successfully manifest $tpl => $repo"
     } || {
-        echo_red_split "Manifest $tpl => $repo fail."
+        log_error "Manifest $tpl => $repo fail."
     }
 
 }
@@ -296,8 +305,7 @@ build_all() {
 build_single() {
     local single=$1
     [[ ! -e "$single" ]] && {
-        echo_red_split "$single missing"
-        echo
+        log_error "$single missing"
         return 1
     }
 
@@ -308,7 +316,7 @@ build_single() {
     }
 
     [[ -z "$files" ]] && {
-        echo_red_split "$single Dockerfile missing"
+        log_error "$single Dockerfile missing"
         return 1
     }
 
@@ -431,5 +439,13 @@ else
         shift $(( $# > 0 ? 1 : 0 ))
     done
 fi
+
+[[ -n "$(cat $ERR_LOG_FILE)" ]] && {
+    echo
+    echo_red "Errors:"
+    echo -e "\033[31m$SPLITLINE"
+    cat $ERR_LOG_FILE
+    echo -e "$SPLITLINE\033[0m"
+}
 
 exit_ok

@@ -1,3 +1,5 @@
+SPLITLINE="================================================="
+
 echo_red() {
     echo -e "\033[31m$@\033[0m"
 }
@@ -9,11 +11,11 @@ echo_green() {
 echo_split() {
     local start=
     if [[ -n "$@" ]]; then
-        echo "================================================="
+        echo "$SPLITLINE"
         echo "\n$@"
         start="\n"
     fi
-    echo "$start================================================="
+    echo "$start$SPLITLINE"
 }
 
 echo_red_split() {
