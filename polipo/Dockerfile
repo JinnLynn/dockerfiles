@@ -2,8 +2,10 @@ FROM jinnlynn/alpine
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
+ARG COMMIT_ID="4d42ca1b5849518762d110f34b6ce2e03d6df9ec"
+
 RUN set -ex && \
-    DLINK="https://github.com/jech/polipo/archive/master.tar.gz" && \
+    DLINK="https://github.com/jech/polipo/archive/${COMMIT_ID}.tar.gz" && \
     cd /tmp && \
     apk add --no-cache --virtual .build-deps build-base openssl && \
     wget -O- "$DLINK" | tar xz --strip-components 1 && \
