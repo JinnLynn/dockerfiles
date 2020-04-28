@@ -8,7 +8,7 @@ ARG VERSION=3
 # REF: https://pip.pypa.io/en/stable/user_guide/#environment-variables
 ENV PIP_INDEX_URL="${MIRROR:-https://pypi.doubanio.com/simple/}"
 
-COPY py_release.sh /app/bin/py_release
+COPY py-release.sh /app/bin/py-release
 
 RUN set -ex && \
     apk add --no-cache python${VERSION:-3} && \

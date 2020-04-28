@@ -8,7 +8,7 @@ ARG VERSION=1.6.6
 ENV LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 LANGUAGE=en_US.UTF-8
 
 RUN set -ex && \
-    apk add --no-cache --virtual .build-deps gcc $(py_release)-dev musl-dev && \
+    apk add --no-cache --virtual .build-deps gcc $(py-release)-dev musl-dev && \
     pip install --no-cache-dir "bypy${VERSION:+>=}${VERSION}" && \
     apk del --no-cache .build-deps
 

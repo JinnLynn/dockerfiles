@@ -7,7 +7,7 @@ LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 ARG VERSION="1.1.1"
 
 RUN set -ex && \
-    apk add --no-cache --virtual .build-deps build-base linux-headers $(py_release)-dev && \
+    apk add --no-cache --virtual .build-deps build-base linux-headers $(py-release)-dev && \
     pip install --no-cache-dir -U pip "flask${VERSION:+==}${VERSION}" uwsgi && \
     apk del --no-cache .build-deps
 
