@@ -14,17 +14,17 @@
 USER=${DOCKER_USER:-}
 [[ -z "$USER" ]] && USER=$(docker info 2>/dev/null | grep Username | awk '{print $2}')
 # 构建所有镜像时的优先顺序
-ALL_BUILD_PRIORITY=${DOCKER_ALL_BUILD_PRIORITY:-"alpine ubuntu httpd python flask php php/fpm node"}
+ALL_BUILD_PRIORITY=${DOCKER_ALL_BUILD_PRIORITY:-"alpine ubuntu httpd python flask php node"}
 
+DEFAULT_BUILD_OPTS="--rm --force-rm --network=host"
 
 CMD_PUSH=false
-CMD_VERBOSE=false
-CMD_FORCE=false
-CMD_DRY_RUN=false
-CMD_QUIET=false
 CMD_MANIFEST=false
+CMD_FORCE=false
+CMD_VERBOSE=false
+CMD_DRY_RUN=false
 CMD_BUILD_ARGS=
-CMD_BUILD_OPTS=
+CMD_BUILD_OPTS="$DEFAULT_BUILD_OPTS"
 
 LIBRARY=library
 
@@ -39,13 +39,13 @@ which realpath 1>/dev/null 2>&1 || {
 
 BASE_DIR=$(realpath $(dirname $0))
 ARCH=
-SPECIFIED=false
 
 ERR_LOG_FILE=$(mktemp)
 
 . $BASE_DIR/_scripts/common.sh
 
 is_ignored() {
+    is_true $CMD_FORCE && return 1
     local type=$1
     local image=$2
     local suite=$3
@@ -150,19 +150,16 @@ build_s2() {
         echo_green_split
     fi
 
-
-    if ! is_true $SPECIFIED; then
-        local new_suite=()
-        for s in ${suite[@]}; do
-            is_build_ignored $image $s && \
-                log_error "Build $(get_local_tag $image $s) ignored." || \
-                new_suite=(${new_suite[@]} $s)
-        done
-        if [[ -z "${new_suite[@]}" ]]; then
-            return 0
-        fi
-        suite=(${new_suite[@]})
+    local new_suite=()
+    for s in ${suite[@]}; do
+        is_build_ignored $image $s && \
+            log_error "Build $(get_local_tag $image $s) ignored." || \
+            new_suite=(${new_suite[@]} $s)
+    done
+    if [[ -z "${new_suite[@]}" ]]; then
+        return 0
     fi
+    suite=(${new_suite[@]})
 
     [[ -n "$OPT_BUILD_DEPENDS" ]] && {
         for img in ${OPT_BUILD_DEPENDS[@]}; do
@@ -173,8 +170,6 @@ build_s2() {
     }
 
     local build_opts="$CMD_BUILD_OPTS $OPT_BUILD_OPTIONS"
-    is_true $CMD_FORCE && build_opts="$build_opts --no-cache"
-    is_true $CMD_QUIET && build_opts="$build_opts --quiet"
 
     BUILD_ARGS="$OPT_BUILD_ARGS $CMD_BUILD_ARGS"
     [[ -n "$BUILD_ARGS" ]] && {
@@ -188,7 +183,7 @@ build_s2() {
     done
 
     # echo $build_opts
-    if run_cmd docker build --rm --force-rm  --network=host $build_opts -f $f $build_dir; then
+    if run_cmd docker build $build_opts -f $f $build_dir; then
         echo_green_split "Successfully built $tag with context $image"
 
         if is_true $CMD_PUSH; then
@@ -231,7 +226,7 @@ push() {
 
     local tag_push_desc="$tag => $push_tag"
 
-    if ! is_true $SPECIFIED && is_push_ignored $image $tag; then
+    if is_push_ignored $image $tag; then
         log_error "Push $tag_push_desc ignored."
         return 0
     fi
@@ -338,18 +333,28 @@ check_param() {
 
 usage() {
     cat <<EOF
-USAGE: $0 [OPTIONS] [DOCKERFILE ...]
+USAGE: $0 [OPTIONS] [DIR|DOCKERFILE ...]
 
 Options:
-  -h, --help        帮助
-  -u, --user USER   Docker hub用户名，可为空，不指定默认通过docker info获取
-  -x, --proxy       代理，在docker build中添加代理相关参数
-  --quiet           安静模式，在docker build中添加--quiet参数
-  --build-arg       自定义创建参数，添加到docker build命令中
-  -p, --push        构造镜像后推送至镜像库
-  -f, --force       强制重建，不使用缓存
-  -d, --dry-run     仅输出运行过程
-  -v, --verbose     详细输出
+    -h, --help            帮助
+    -u, --user USER       用户名，用于生成镜像名，当值为『-』时则意味着用户名将被置空
+    -p, --push            构造镜像后推送至镜像库
+    -m, --manifest        使用manifest-tool构建支持多平台架构的镜像
+    -f, --force           忽略.buildignore
+    -d, --dry-run         仅输出运行过程
+    -v, --verbose         详细输出
+
+以build开始的参数都作用于docker build命令:
+
+    --build-arg ARG       自定义构建参数，即docker build --build-arg ARG
+    --build-proxy PROXY   构建代理，等价于
+                            --build-arg http_proxy=PROXY
+                            --build-arg https_proxy=PROXY
+    --build-opt OPT       docker build参数，已有默认: $DEFAULT_BUILD_OPTS
+    --build-quiet         安静模式，相当于:
+                            --build-opt "--quite"
+    --build-force         强制重建，不使用缓存，相当于:
+                            --build-opt "--no-cache"
 EOF
 }
 
@@ -361,8 +366,7 @@ while (( ${#} )); do
         --user|-u )
             shift 1
             USER=${1:-}
-            # 允许USER为空
-            check_param "--user|-u" $USER true
+            [[ "$USER" == "-" ]] && USER=""
             ;;
         --push|-p )
             CMD_PUSH=true
@@ -376,28 +380,31 @@ while (( ${#} )); do
             arg=${1:-}
             [[ -n "$arg" ]] && CMD_BUILD_ARGS="$CMD_BUILD_ARGS $arg"
             ;;
+        --build-proxy )
+            shift 1
+            arg=${1:-}
+            [[ -n "$arg" ]] && CMD_BUILD_ARGS="$CMD_BUILD_ARGS http_proxy=$arg https_proxy=$arg"
+            ;;
         --build-opt )
             shift 1
             arg=${1:-}
             [[ -n "$arg" ]] && CMD_BUILD_OPTS="$CMD_BUILD_OPTS $arg"
             ;;
-        --proxy| -x)
-            shift 1
-            arg=${1:-}
-            [[ -n "$arg" ]] && CMD_BUILD_ARGS="$CMD_BUILD_ARGS http_proxy=$arg https_proxy=$arg"
+        --build-force )
+            CMD_BUILD_OPTS="$CMD_BUILD_OPTS --no-cache"
+            ;;
+        --build-quiet )
+            CMD_BUILD_OPTS="$CMD_BUILD_OPTS --quite"
             ;;
         --force|-f )
             CMD_FORCE=true
-            ;;
-        --verbose|-v )
-            CMD_VERBOSE=true
             ;;
         --dry-run|-d)
             CMD_DRY_RUN=true
             CMD_VERBOSE=true
             ;;
-        --quiet|-q)
-            CMD_QUIET=true
+        --verbose|-v )
+            CMD_VERBOSE=true
             ;;
         --help|-h )
             usage
@@ -416,15 +423,19 @@ done
 
 ARCH=$(arch_go_mark)
 
+# ?
 CMD_BUILD_ARGS=$(echo $CMD_BUILD_ARGS)
+CMD_BUILD_OPTS=$(echo $CMD_BUILD_OPTS)
 
 is_true $CMD_VERBOSE && {
     echo
     echo "USER:        $USER"
     echo "ARCH:        $ARCH"
     echo "PUSH:        $CMD_PUSH"
+    echo "MANIFEST:    $CMD_MANIFEST"
     echo "FORCE:       $CMD_FORCE"
     echo "DRY_RUN:     $CMD_DRY_RUN"
+    echo "BUILD_OPTS:  $CMD_BUILD_OPTS"
     echo "BUILD_ARGS:  $CMD_BUILD_ARGS"
     echo "FILE/DIR:    $@"
     echo
@@ -433,7 +444,6 @@ is_true $CMD_VERBOSE && {
 if [[ $# -eq 0 ]]; then
     build_all
 else
-    SPECIFIED=true
     while [[ $# -gt 0 ]]; do
         build_single $1
         shift $(( $# > 0 ? 1 : 0 ))
@@ -442,8 +452,8 @@ fi
 
 [[ -n "$(cat $ERR_LOG_FILE)" ]] && {
     echo
-    echo_red "Errors:"
     echo -e "\033[31m$SPLITLINE"
+    echo "ERRORS:"
     cat $ERR_LOG_FILE
     echo -e "$SPLITLINE\033[0m"
 }
