@@ -1,13 +1,11 @@
-# Alpine ARMHF 没有 chromium
-FROM jinnlynn/ubuntu
+ARG PY_VERSION
+FROM jinnlynn/python${PY_VERSION:+":$PY_VERSION"}
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
 RUN set -ex && \
-    DEBIAN_FRONTEND=noninteractive && \
-    apt-get update && \
-    apt-get install -y python-selenium && \
-    cleanup
+    apk add --no-cache chromium chromium-chromedriver && \
+    pip install --no-cache-dir -U pip selenium
 
 COPY demo.py /app/opt/
 
