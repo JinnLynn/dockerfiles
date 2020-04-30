@@ -5,12 +5,26 @@
 # B,IMAGE[:TAG] build忽略
 # M,IMAGE manifest忽略
 # ==================================
-P,ztest
-B,alpine-builder
-B,genpac-server:arm
-B,genpac-server:amd64
-P,genpac-server
+B,ztest
+B,genpac-server:dev
 P,genpac-watch
-P,git-server
 B,gogs
-P,youtube-dl-base
+
+
+# ==================================
+# 版本稳定或长久未更新，无需每次build
+# ==================================
+# 稳定
+# Last Pushed: 2020-04-30
+B,ddns
+B,freedom
+
+# polipo最近一次代码提交已是2016年
+# https://github.com/jech/polipo
+# Last Pushed: 2020-04-30
+B,polipo
+
+# byp已进入维护阶段，除非bug否则不会更新
+# https://github.com/houtianze/bypy
+# Last Pushed: 2020-04-30
+B,bypy
