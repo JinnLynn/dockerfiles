@@ -1,6 +1,5 @@
 #!/usr/bin/env sh
 
-# 一些变量
 # 代理服务器地址
 REDIR_SERVER=${REDIR_SERVER:-}
 # ss-redir本地端口
@@ -17,8 +16,10 @@ IPSET_GFWLIST=${IPSET_GFWLIST:-GFWLIST}
 IPSET_CNIP=${IPSET_CNIP:-CNIP}
 # IP数据地址
 IPDATA_URI=${IPDATA_URI:-https://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest}
-# cnip数据本地文件 如果在线无法下载则使用此文件
-CNIP_FILE=${CNIP_FILE:-/app/opt/cnip.txt}
+# cnip data
+CNIP_FILE=/app/opt/cnip.txt
+CNIP_ETAG=/app/opt/cnip.etag
+
 TPROXY_MARK="0x2333/0x2333"
 
 # 检查ipset是否存在 不存在创建
@@ -32,31 +33,48 @@ reset_ipset() {
     ipset destroy $IPSET_CNIP 1>/dev/null 2>&1
 
     check_ipset_exist
-    update_cnip
+    refresh_cnip
 }
 
-# 下载cnip数据，成功输出数据临时文件 失败不输出
-_download_cnip_data() {
-    [ -z "$IPDATA_URI" ] && return 1
+# 下载cnip数据
+# $1 有值时将显示无更新信息和下载进度条
+download_cnip() {
+    # 检查ETag看是否改变
+    local etag=$(curl -sSLI "$IPDATA_URI" | grep ETag | awk -F \" '{print $2}')
+    [ "$etag" == "$(cat $CNIP_ETAG 2>/dev/null)" ] && {
+        [ -n "$1" ] && echo "CNIP data unchanged."
+        return 1
+    }
+
     local dfile=$(mktemp)
-    curl -sSL "$IPDATA_URI" | awk -F\| '/CN\|ipv4/ { printf("%s/%d\n", $4, 32-log($5)/log(2)) }' >$dfile && echo $dfile
+    local etfile=$(mktemp)
+    local progress="-sS"
+    [ -n "$1" ] && progress="-#"
+    curl -L $progress -D $etfile "$IPDATA_URI" | awk -F\| '/CN\|ipv4/ { printf("%s/%d\n", $4, 32-log($5)/log(2)) }' > ${dfile} && {
+        local count=$(wc -l ${dfile} | awk '{print $1}')
+        echo "CNIP updated: $count routes."
+        echo "# $(date +%Y%m%d) $count routes" >${CNIP_FILE}
+        cat ${dfile} >$CNIP_FILE
+        cat ${etfile} | grep ETag | awk -F \" '{print $2}' >$CNIP_ETAG
+        rm -rf ${dfile} ${etfile}
+        return 0
+    } || {
+        echo "Download CNIP fail."
+        return 1
+    }
 }
 
-update_cnip() {
-    # 强制更新: 清空set内容
-    [ "$1" == "force" ] && ipset flush $IPSET_CNIP
+# 刷新cnip ipset 检查IP DATA是否有更新
+# $1 有值时将强制刷新
+refresh_cnip() {
+    # 强制更新: 清空set
+    [ -n "$1" ] && ipset flush $IPSET_CNIP
+
+    # 下载成功 也清空set
+    download_cnip $1 && ipset flush $IPSET_CNIP
+
     # 如果列表已存在条目 退出
     ipset list $IPSET_CNIP | grep -e ^[0-9] -q && return
-
-    # 下载cnip数据
-    local dfile=$(mktemp)
-    curl -sSL "$IPDATA_URI" | awk -F\| '/CN\|ipv4/ { printf("%s/%d\n", $4, 32-log($5)/log(2)) }' > ${dfile} && {
-        local ip_count=$(wc -l ${dfile} | awk '{print $1}')
-        echo "$ip_count routes fetched."
-        echo "# $(date +%Y%m%d) $ip_count routes" >${CNIP_FILE}
-        cat ${dfile} >>$CNIP_FILE
-        rm -rf ${dfile}
-    } || echo "Download ip data fail."
 
     # 添加ip
     cat "$CNIP_FILE" | while read line; do
@@ -186,7 +204,7 @@ enable_all() {
 
 enable_cnip() {
     # 0. 创建中国IP的ipset
-    update_cnip
+    refresh_cnip
 
     # 1. 让所有流量通过代理
     enable_all
@@ -229,16 +247,20 @@ mode() {
 
 usage() {
         cat <<EOF
-USAGE: $0 [COMMAND]
+USAGE: $0 [COMMAND] [OPTION]
 
 Commands:
   help          帮助
-  gfwlist       对gfwlist中的网站使用代理
-  cnip          对非中国IP使用代理
+  gfwlist       对gfwlist使用代理
+  cnip          对非CNIP使用代理
   all           所有流量通过代理
   direct        不使用透明代理
   reset-ipset   重置ipset list
-  update-cnip   更新cnip
+  cnip-refresh  刷新cnip ipset list
+  cnip-download 仅下载cnip
+
+Options:
+  keep-alive    保持容器一直运行 *必须*
 EOF
 }
 
@@ -259,6 +281,12 @@ prepare() {
     # del_pbr
     # add_pbr
 }
+
+# 只是下载cnip
+if [ "$1" == "cnip-download" ]; then
+    download_cnip "download-only"
+    exit $?
+fi
 
 prepare
 
@@ -285,10 +313,10 @@ case "$1" in
     reset-ipset )
         reset_ipset
         ;;
-    update-cnip )
-        update_cnip force
+    cnip-refresh )
+        refresh_cnip force
         ;;
-    ip-data )
+    cnip-data )
         cat $CNIP_FILE
         ;;
     help )
@@ -300,9 +328,8 @@ case "$1" in
         ;;
 esac
 
-[ "$2" == "keep-alive" ] && {
-    while [[ true ]]; do
-        sleep 1
-    done
-}
-
+while [ "$2" == "keep-alive" ]; do
+    # 检查CNIP数据
+    refresh_cnip | xargs -r echo $(date "+%Y-%m-%d %H:%M:%S")
+    sleep 1h
+done
