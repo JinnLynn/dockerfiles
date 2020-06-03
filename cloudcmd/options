@@ -1,0 +1,2 @@
+# arm: 安装太慢 arm64: 无法安装
+OPT_BUILD_PLATFORM="linux/amd64"

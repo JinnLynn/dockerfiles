@@ -2,10 +2,10 @@ FROM jinnlynn/node
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
-ARG VERSION="14.4.0"
+ARG VERSION="14.5.1"
 
 RUN set -ex && \
-    npm install -g "cloudcmd@==${VERSION}"
+    npm install -g "cloudcmd${VERSION:+@==$VERSION}"
 
 ENTRYPOINT ["cloudcmd"]
 
