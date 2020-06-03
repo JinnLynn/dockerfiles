@@ -1,4 +1,5 @@
-FROM jinnlynn/alpine
+ARG ALPINE_VERSION
+FROM jinnlynn/alpine${ALPINE_VERSION:+":$ALPINE_VERSION"}
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 

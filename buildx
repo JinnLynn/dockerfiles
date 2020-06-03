@@ -1,0 +1,485 @@
+#!/bin/bash
+# docker run --rm --privileged docker/binfmt:a7996909642ee92942dcd6cff44b9b95f08dad64
+# ll /proc/sys/fs/binfmt_misc/qemu-*
+# buildx create --name builder --driver docker-container --driver-opt image=moby/buildkit,network=host --use
+# docker buildx inspect --bootstrap
+
+# macOS下没有 realpath
+# REF: https://stackoverflow.com/questions/3572030/bash-script-absolute-path-with-os-x/3572105#3572105
+which realpath 1>/dev/null 2>&1 || {
+    realpath() {
+        [[ $1 = /* ]] && echo "$1" || echo "$PWD/${1#./}"
+    }
+}
+
+log_error() {
+    echo "$1" >>$ERR_LOG_FILE
+    echo_red "$1"
+}
+
+# ==============================================================================
+BASE_DIR=$(realpath $(dirname $0))
+
+# 默认docker user
+USER=${DOCKER_USER:-}
+[[ -z "$USER" ]] && USER=$(docker info 2>/dev/null | grep Username | awk '{print $2}')
+
+# 默认构建镜像优先顺序
+DEF_BUILD_PRIORITY=${DOCKER_BUILD_PRIORITY:-"alpine ubuntu python go node php php/fpm flask httpd nginx nginx/stream git"}
+# 默认构架镜像的CUP架构
+DEF_BUILD_ARCHS=${DOCKER_BUILD_ARCHS:-"amd64 arm64 arm/v7 arm/v6"}
+# 默认构建架构平台
+# REF: https://github.com/containerd/containerd/blob/v1.2.6/platforms/platforms.go#L63
+DEF_BUILD_PLATFORMS=$(for _A in $DEF_BUILD_ARCHS; do echo -n "linux/$_A,"; done)
+DEF_BUILD_PLATFORMS=${DEF_BUILD_PLATFORMS%,}
+
+source $BASE_DIR/_scripts/common.sh
+
+BUILDX_MIN_VERSION="v0.4.1"
+LAST_CMD_RUNNED=
+FAILED_RETRY_MAX=${FAILED_RETRY_MAX:-5}
+
+# ==============================================================================
+
+is_true() {
+    [[ "$1" == "true" || "$1" == "yes" ]] && return 0 || return 1
+}
+
+is_fail() {
+    [[ $? -ne 0 ]]
+}
+
+is_ignored() {
+    is_true $CMD_FORCE && return 1
+    local type=$1
+    local image=$2
+    local suite=$3
+    cat $BASE_DIR/.buildignore 2>/dev/null | grep -q -e "^$type,$image\$" -e "^$type,$image:$suite\$"
+}
+
+is_build_ignored() {
+    is_ignored B $1 $2
+}
+
+is_push_ignored() {
+    is_ignored P $1 $2
+}
+
+get_local_tag() {
+    local image=$1
+    local suite=$2
+    local tag=$image
+    [[ -n "$suite" && "$suite" != "latest" ]] && tag="$image:$suite"
+    [[ -n "$USER" ]] && tag="$USER/$tag"
+    echo $tag
+}
+
+get_local_arch() {
+    local arch=$(uname -m)
+    case "$arch" in
+        i386 )
+            echo "386"
+            ;;
+        x86_64 )
+            echo "amd64"
+            ;;
+        arm|armv7* )
+            echo "arm"
+            ;;
+        aarch64*|armv8* )
+            echo "arm64"
+            ;;
+        *)
+            echo "unknown"
+            ;;
+    esac
+}
+
+get_local_platform() {
+    echo "linux/$(get_local_arch)"
+}
+
+# 查找包含Dockerfile或Dockerfile.$ARCH的目录
+# $1 要查找的路径 默认: .
+# $2 查找最大层 默认: 3
+find_dirs() {
+    local path=.
+    local depth=3
+    [[ -n "$1" ]] && path="$1"
+    [[ -n "$2" ]] && depth=$2
+
+    IFS=$'\n'
+    local dirs=$(find "$path" -maxdepth $depth ! -ipath '.\/[~\._]*' -iname "Dockerfile*" | sed 's|\.\/||' | xargs -n1 dirname 2>/dev/null | sort -u)
+    unset IFS
+
+    echo $dirs
+}
+
+run_cmd() {
+    local cmd=$@
+    [ -z "$cmd" ] && cmd=$LAST_CMD_RUNNED
+    LAST_CMD_RUNNED=$cmd
+    is_true $CMD_DRY_RUN && echo "$cmd" && return 0
+    is_true $CMD_VERBOSE && echo_green "RUN CMD: $cmd"
+    $cmd
+}
+
+retry_if_failed() {
+    is_fail || return 0
+    local n=1
+    until [ $n -gt $FAILED_RETRY_MAX ]; do
+        echo
+        echo_red_split "Failed, retry #$n/$FAILED_RETRY_MAX after 3 seconds..."
+        echo
+        sleep 3
+        run_cmd
+        is_fail || return 0
+        n=$[$n+1]
+    done
+    return 1
+}
+
+# ==========
+
+build() {
+    local f="$1"
+    local buildfile=
+
+    (
+        [[ -d "$f" ]] && source $f/options 2>/dev/null
+
+        [[ -n "$OPT_BUILD_FILE" ]] && f="$f/$OPT_BUILD_FILE"
+
+        if [[ -d "$f" ]]; then
+            [[ -f "$f/docker-bake.hcl" ]] && f="$f/docker-bake.hcl" || f="$f/Dockerfile"
+        fi
+
+        [[ ! -f "$f" ]] && {
+            log_error "$1 build file missing."
+            return 1
+        }
+
+        echo_green "Building with context $(dirname $f)[$(basename $f)]"
+        echo_green_split
+
+        if [[ "${f##*.}" == "hcl" ]]; then
+            build_bake "$f"
+        else
+            build_dockerfile "$f"
+        fi
+
+        echo_green_split
+        echo
+    )
+}
+
+get_build_option() {
+    local opts="$CMD_BUILD_OPTS"
+
+    is_true $CMD_BUILD_FORCE && opts="$opts --no-cache"
+    is_true $CMD_PUSH && opts="$opts --push"
+    is_true $CMD_LOAD && opts="$opts --load"
+
+    echo $opts
+}
+
+# 平台
+# 优先级: 默认 < options < 命令指定 < --load时本地系统平台
+get_build_platform() {
+    is_true $CMD_LOAD && {
+        get_local_platform
+        return
+    }
+
+    local plat=${OPT_BUILD_PLATFORM:-$DEF_BUILD_PLATFORMS}
+    echo ${CMD_PLATFORM:-$plat}
+}
+
+build_bake() {
+    local f=$1
+    local bakefile=$(basename $f)
+    local build_dir=$(dirname $f)
+
+    if is_true $CMD_VERBOSE; then
+        echo_green "filepath:   $f"
+        echo_green "build_dir:  $build_dir"
+        echo_green "bakefile:   $bakefile"
+        echo_green "target:     $CMD_BUILD_TARGET"
+        echo_green_split
+    fi
+
+    (
+        DOCKER_USER=$USER
+        run_cmd docker buildx bake $(get_build_option) -f "$f" --set *.context=$build_dir --set *.platform=$(get_build_platform) $CMD_BUILD_TARGET
+
+        retry_if_failed
+
+        is_fail && {
+            echo
+            log_error "Build $f fail."
+        }
+    )
+}
+
+# 构建镜像
+# $1 目录或Dockerfile路径
+# $2 options file
+build_dockerfile() {
+    local f=$1
+    local of=$2
+
+    local dockerfile=$(basename $f)
+    local build_dir=$(dirname $f)
+    local image=${build_dir%%\/*}
+
+    suite=(${build_dir##*\/})
+
+    [[ "$suite" == "$build_dir" ]] && suite=("latest")
+
+    local tag=$(get_local_tag $image $suite)
+
+    if is_true $CMD_VERBOSE; then
+        echo_green "filepath:   $f"
+        echo_green "build_dir:  $build_dir"
+        echo_green "dockerfile: $dockerfile"
+        echo_green "image:      $image"
+        echo_green "suite:      ${suite[@]:-latest}"
+        echo_green "tags:       $(get_local_tag $image $suite)"
+        echo_green_split
+    fi
+
+    local new_suite=()
+    for s in ${suite[@]}; do
+        is_build_ignored $image $s && \
+            log_error "Build $(get_local_tag $image $s) ignored." || \
+            new_suite=(${new_suite[@]} $s)
+    done
+    if [[ -z "${new_suite[@]}" ]]; then
+        return 0
+    fi
+    suite=(${new_suite[@]})
+
+
+    local build_opts=$(get_build_option)
+
+    build_args="$OPT_BUILD_ARGS $CMD_BUILD_ARGS"
+    [[ -n "$build_args" ]] && {
+        for a in $build_args; do
+            build_opts="$build_opts --build-arg $a"
+        done
+    }
+
+    for s in ${suite[@]}; do
+        build_opts="$build_opts -t $(get_local_tag $image $s)"
+    done
+
+    for t in $CMD_BUILD_TARGET; do
+        build_opts="$build_opts --target $t"
+    done
+
+    run_cmd docker buildx build --platform=$(get_build_platform) $build_opts -f $f $build_dir
+
+    # run_cmd docker build $build_opts -f $f $build_dir
+
+    retry_if_failed
+
+    is_fail && {
+        echo
+        log_error "Build $tag with context $image fail."
+    }
+}
+
+build_all() {
+    local dirs=$(find_dirs)
+    dirs=($DEF_BUILD_PRIORITY ${dirs[@]})
+    # 去重
+    dirs=($(awk -v RS=' ' '!a[$1]++' <<< ${dirs[@]}))
+
+    # echo ${dirs[@]}
+
+    for d in ${dirs[@]}; do
+        build "$d"
+    done
+}
+
+build_single() {
+    local single=$1
+    [[ ! -e "$single" ]] && {
+        log_error "$single missing"
+        return 1
+    }
+
+    local files=
+    [[ -f "$single" ]] && files=($single) || {
+        single=${single%/}
+        files=$(find_dirs $single 2)
+    }
+
+    # [[ -z "$files" ]] && {
+    #     log_error "$single Dockerfile missing"
+    #     return 1
+    # }
+
+    for f in ${files[@]}; do
+        build "$f"
+    done
+}
+
+buildx_check() {
+    docker buildx version 1>/dev/null 2>&1 || {
+        exit_err "buildx未安装, 访问: https://github.com/docker/buildx"
+    }
+    cur_ver=$(docker buildx version | awk '{print $2}')
+    [[ $(echo -e "$cur_ver\n$BUILDX_MIN_VERSION" | sort | head -n1) != "$cur_ver" ]] && {
+        exit_err "buildx版本需高于${BUILDX_MIN_VERSION}, 当前版本: ${cur_ver}"
+    }
+}
+
+usage() {
+    cat <<EOF
+USAGE: $0 [OPTIONS] [DIR|DOCKERFILE ...]
+
+需要 buildx 版本高于${BUILDX_MIN_VERSION}的支持, https://github.com/docker/buildx
+
+Options:
+    -h, --help            帮助
+    -u, --user USER       用户名，用于生成镜像名，当值为『-』时则意味着用户名将被置空
+    -p, --push            构造镜像后推送至镜像库
+    -l, --load
+    -f, --force           忽略.buildignore
+    -d, --dry-run         仅输出运行过程
+    -v, --verbose         详细输出
+
+以build开始的参数都作用于docker build命令:
+
+    --build-arg ARG       自定义构建参数，即docker build --build-arg ARG
+    --build-opt OPT       docker build参数，已有默认: $DEFAULT_BUILD_OPTS
+    --build-force         强制重建，不使用缓存，相当于:
+                            --build-opt "--no-cache"
+EOF
+}
+
+# ====================================
+CMD_VERBOSE=false
+CMD_DRY_RUN=false
+CMD_PLATFORM=
+CMD_PUSH=false
+CMD_LOAD=false
+CMD_PULL=false
+CMD_FORCE=false
+CMD_BUILD_ARGS=
+CMD_BUILD_OPTS=
+CMD_BUILD_TARGET=
+
+pushd "$BASE_DIR" >/dev/null
+
+while (( ${#} )); do
+    case "$1" in
+        --user|-u )
+            shift 1
+            USER=${1:-}
+            [[ "$USER" == "-" ]] && USER=""
+            ;;
+        --platform )
+            shift 1
+            CMD_PLATFORM=${1:-}
+            ;;
+        -output|-o )
+            shift 1
+            CMD_OUTPUT=${1:-}
+            ;;
+        --push|-p )
+            CMD_PUSH=true
+            ;;
+        --load|-l )
+            CMD_LOAD=true
+            ;;
+        --pull )
+            CMD_PULL=true
+            ;;
+        --build-target )
+            shift 1
+            CMD_BUILD_TARGET="$CMD_BUILD_TARGET $1"
+            ;;
+        --build-arg )
+            shift 1
+            arg=${1:-}
+            [[ -n "$arg" ]] && CMD_BUILD_ARGS="$CMD_BUILD_ARGS $arg"
+            ;;
+        --build-opt )
+            shift 1
+            arg=${1:-}
+            [[ -n "$arg" ]] && CMD_BUILD_OPTS="$CMD_BUILD_OPTS $arg"
+            ;;
+        --build-force )
+            CMD_BUILD_OPTS="$CMD_BUILD_OPTS --no-cache"
+            ;;
+        --force|-f )
+            CMD_FORCE=true
+            ;;
+        --dry-run|-d)
+            CMD_DRY_RUN=true
+            CMD_VERBOSE=true
+            ;;
+        --verbose|-v )
+            CMD_VERBOSE=true
+            ;;
+        --help|-h )
+            usage
+            exit_ok
+            ;;
+        -* )
+            exit_err "错误的选项: $1"
+            ;;
+        * )
+            # 参数结束
+            break
+            ;;
+    esac
+    shift 1
+done
+
+# 检查
+
+ERR_LOG_FILE=$(mktemp)
+
+is_true $CMD_VERBOSE && {
+    echo_green "Main Options:"
+    echo_green_split
+    echo_green "USER:        $USER"
+    echo_green "LOCAL ARCH:  $(get_local_arch)"
+    echo_green "PLATFORM:    ${CMD_PLATFORM:-$DEF_BUILD_PLATFORMS}"
+    echo_green "PUSH:        $CMD_PUSH"
+    echo_green "LOAD:        $CMD_LOAD"
+    echo_green "PULL:        $CMD_PULL"
+    echo_green "FORCE:       $CMD_FORCE"
+    echo_green "DRY_RUN:     $CMD_DRY_RUN"
+    echo_green "BUILD_OPTS:  $CMD_BUILD_OPTS"
+    echo_green "BUILD_ARGS:  $CMD_BUILD_ARGS"
+    echo_green "BUILD_TARGET:$CMD_BUILD_TARGET"
+    echo_green "FILE/DIR:    $@"
+    echo_green_split
+    echo
+}
+
+# 检查
+buildx_check
+
+if [[ $# -eq 0 ]]; then
+    build_all
+else
+    while [[ $# -gt 0 ]]; do
+        build_single $1
+        shift $(( $# > 0 ? 1 : 0 ))
+    done
+fi
+
+[[ -n "$(cat $ERR_LOG_FILE)" ]] && {
+    echo
+    echo -e "\033[31m$SPLITLINE"
+    echo "ERRORS:"
+    cat $ERR_LOG_FILE
+    echo -e "$SPLITLINE\033[0m"
+}
+
+exit_ok

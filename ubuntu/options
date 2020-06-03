@@ -1,5 +1,4 @@
-_VERSION=20.04
 
-OPT_BUILD_DEPENDS="ubuntu:$_VERSION"
-OPT_BUILD_TAGS="latest $_VERSION"
-OPT_BUILD_ARGS="BASE=$OPT_BUILD_DEPENDS"
+# 构建目标平台
+# ubuntu 官方镜像没有 linux/arm/v6 架构的
+OPT_BUILD_PLATFORM="linux/amd64,linux/arm64,linux/arm/v7"
