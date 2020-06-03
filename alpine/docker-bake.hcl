@@ -1,7 +1,7 @@
 variable "DOCKER_USER" {
 	default = ""
 }
-# ["linux/amd64", "linux/arm64", "linux/arm"]
+
 variable "LATEST_VERSION" {
     default = "3.11"
 }
@@ -10,29 +10,38 @@ group "default" {
     targets = ["latest", "edge"]
 }
 
-target "latest" {
+target "_base" {
 	dockerfile = "Dockerfile"
     platforms = ["linux/amd64", "linux/arm64", "linux/arm"]
     pull = true
-	tags = [
-         "${DOCKER_USER}/alpine",
-         "${DOCKER_USER}/alpine:${LATEST_VERSION}"
-    ]
-    args = {
-        VERSION = "${LATEST_VERSION}"
-    }
 }
 
 target "edge" {
-    inherits = ["latest"]
+    inherits = ["_base"]
     tags = ["${DOCKER_USER}/alpine:edge"]
     args = {
         VERSION = "edge"
     }
 }
 
+target "3.12" {
+    inherits = ["_base"]
+    tags = ["${DOCKER_USER}/alpine:3.12"]
+    args = {
+        VERSION = "3.12"
+    }
+}
+
+target "3.11" {
+    inherits = ["_base"]
+    tags = ["${DOCKER_USER}/alpine:3.11"]
+    args = {
+        VERSION = "3.11"
+    }
+}
+
 target "3.10" {
-    inherits = ["latest"]
+    inherits = ["_base"]
     tags = ["${DOCKER_USER}/alpine:3.10"]
     args = {
         VERSION = "3.10"
@@ -40,9 +49,20 @@ target "3.10" {
 }
 
 target "3.9" {
-    inherits = ["latest"]
+    inherits = ["_base"]
     tags = ["${DOCKER_USER}/alpine:3.9"]
     args = {
         VERSION = "3.9"
+    }
+}
+
+target "latest" {
+    inherits = ["${LATEST_VERSION}"]
+	tags = [
+         "${DOCKER_USER}/alpine",
+         "${DOCKER_USER}/alpine:${LATEST_VERSION}"
+    ]
+    args = {
+        VERSION = "${LATEST_VERSION}"
     }
 }
