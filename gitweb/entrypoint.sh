@@ -6,6 +6,8 @@ GIT_USER_ID=${GIT_USER_ID:-1000}
 GIT_GROUP=${GIT_GROUP:-git}
 GIT_GROUP_ID=${GIT_GROUP_ID:-1000}
 
+GIT_PWD=${GIT_PWD}
+
 # Check if user exists
 if ! id -u ${GIT_USER} > /dev/null 2>&1; then
 	echo "The user ${GIT_USER} does not exist, creating..."
@@ -21,6 +23,24 @@ cat <<EOF >/app/etc/lighttpd-user.conf
 server.username  := "${GIT_USER}"
 server.groupname := "${GIT_GROUP}"
 EOF
+
+# 密码
+[ -n "$GIT_USER" -a -n "${GIT_PWD}" ] && {
+    htpasswd -b -c /app/etc/htpasswd "${GIT_USER}" "${GIT_PWD}"
+    cat <<EOF >>/app/etc/lighttpd-user.conf
+server.modules += ( "mod_auth" )
+
+auth.backend = "htpasswd"
+auth.backend.htpasswd.userfile= "/app/etc/htpasswd"
+auth.require = ( "" =>
+    (
+    "method"  => "basic",
+    "realm"   => "Restricted!",
+    "require" => "valid-user"
+    ),
+)
+EOF
+}
 
 chown -R ${GIT_USER}:${GIT_GROUP}   \
     /var/www/localhost              \

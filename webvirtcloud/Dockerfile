@@ -1,4 +1,4 @@
-# py3的预编译包目前只在edge分支中
+# py3的某些预编译包目前只在edge分支中
 FROM jinnlynn/alpine:edge
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"

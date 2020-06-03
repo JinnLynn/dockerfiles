@@ -7,4 +7,4 @@ RUN set -ex && \
     pip install -U --no-cache-dir httpbin && \
     apk del --no-cache .build-deps
 
-CMD ["uwsgi", "--socket", ":8000", "--module", "httpbin:app"]
+ENV UWSGI_MOUNT="/=httpbin:app"

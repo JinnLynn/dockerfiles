@@ -18,6 +18,9 @@ update() {
     else
         echo "Clone..."
         git clone --recurse-submodules --depth 1 --single-branch -q ${REPO_REMOTE} .
+        # pull 某些情况需user
+        git config user.email "${GIT_USER_EMAIL:-you@example.com}"
+        git config user.name "${GIT_USER_NAME:-YourName}"
         pip install -qe .
         echo $ts >$LAST_UPDATE
     fi

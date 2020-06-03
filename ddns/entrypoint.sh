@@ -6,10 +6,13 @@ DDNS_IP_SERVICE=${DDNS_IP_SERVICE:-http://ip.3322.net}
 DDNS_CHECK_INTERVAL=${DDNS_CHECK_INTERVAL:-60}
 
 DDNS_IP=${DDNS_IP:-}
+DDNS_PSL=${DDNS_PSL:-/app/etc/psl.dat}
 
 CONNECT_TIMEOUT=5
-SILENT=false
-REPEAT=false
+SILENT=
+REPEAT=
+
+PSL="psl --load-psl-file $DDNS_PSL --print-reg-domain -b"
 
 is_ip() {
     # [ "$1" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ] && return 0 || return 1
@@ -46,8 +49,9 @@ jq_parse() {
 }
 
 try_update() {
-    sub_domain=$(echo $DDNS_DOMAIN | cut -d '.' -f 1)
-    domain=$(echo $DDNS_DOMAIN | cut -d '.' -f 2-)
+    domain=$1
+    sub_domain=$2
+
     common_params="login_token=$DDNS_TOKEN&format=json&domain=$domain&sub_domain=$sub_domain"
 
     curl_opt="-s -X POST --connect-timeout ${CONNECT_TIMEOUT:-5}"
@@ -68,7 +72,7 @@ try_update() {
 
     # 记录已经与当前IP相同
     [ "$ip" == "$record_ip" ] && {
-        [ "$SILENT" == false ] && log "DDNS domain $DDNS_DOMAIN[$ip] unchanged."
+        [ -z "$SILENT" ] && log "DDNS domain $DDNS_DOMAIN[$ip] unchanged."
         return
     }
 
@@ -98,18 +102,18 @@ while (( ${#} )); do
             shift 1
             DDNS_DOMAIN=${1:-}
             ;;
-        --ip )
+        --ip|-i )
             shift 1
             DDNS_IP=${1:-}
             ;;
-        --slient )
+        --slient|-s )
             SILENT=true
             ;;
-        --repeat )
+        --repeat|-r )
             REPEAT=true
             ;;
         --help|-h )
-            echo "USAGE: $0 [-t|--token TOKEN] [-d|--domain DOMAIN] [--ip IP] [--repeat] [--slient]"
+            echo "USAGE: $0 [-t|--token TOKEN] [-d|--domain DOMAIN] [--ip|-i IP] [--repeat|-r] [--slient|-s]"
             exit 0
             ;;
         -* )
@@ -126,12 +130,17 @@ done
 [ -z "$DDNS_TOKEN" ] && log_err "DNSPOD login token missing." && exit 1
 [ -z "$DDNS_DOMAIN" ] && log_err "DDNS domain missing." && exit 1
 
+domain=$($PSL $DDNS_DOMAIN)
+sub_domain=${DDNS_DOMAIN%.$domain}
+
 echo "====="
-echo "DOMAIN:   $DDNS_DOMAIN"
+echo "DOMAIN:   $DDNS_DOMAIN($sub_domain $domain)"
 echo "TOKEN:    $DDNS_TOKEN"
 echo "IP_SRV:   $DDNS_IP_SERVICE"
-echo "INTERVAL: $DDNS_CHECK_INTERVAL"
-[ -n "$DDNS_IP" ] && echo "IP:       $DDNS_IP"
+[[ -n "$REPEAT" ]] && \
+    echo "INTERVAL: $DDNS_CHECK_INTERVAL"
+[ -n "$DDNS_IP" ] && \
+    echo "IP:       $DDNS_IP"
 echo "====="
 echo
 
@@ -139,8 +148,8 @@ trap trap_update SIGUSR1
 trap exit SIGINT
 
 while :; do
-    try_update
-    [ "$REPEAT" != "true" ] && exit
+    try_update "$domain" "$sub_domain"
+    [[ -z "$REPEAT" ]] && exit
     sleep $DDNS_CHECK_INTERVAL &
     pid=$!
     wait $pid

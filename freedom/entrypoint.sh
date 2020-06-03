@@ -104,7 +104,9 @@ forward() {
     iptables -P FORWARD ACCEPT
     # 临时有效，重启网络或系统都会失效，永久需修改/etc/sysctl.conf
     # echo 1 > /proc/sys/net/ipv4/ip_forward
-    sysctl -w net.ipv4.ip_forward=1 >/dev/null
+    [ $(sysctl -n net.ipv4.ip_forward) != 1 ] && {
+        sysctl -qw net.ipv4.ip_forward=1 >/dev/null
+    }
 }
 
 # 清理iptables中redir相关规则
