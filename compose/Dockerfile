@@ -2,7 +2,7 @@ FROM jinnlynn/python
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
-ARG VERSION=1.25.5
+ARG VERSION=1.26.0
 
 # 1.90.0后run和exec需要通过docker执行，通过设置环境变量COMPOSE_INTERACTIVE_NO_CLI可忽略
 # REF: https://github.com/docker/compose/blob/master/CHANGELOG.md#1190-2018-02-07
