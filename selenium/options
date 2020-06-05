@@ -1,0 +1,2 @@
+# chromium 没有arm/v6版本
+OPT_BUILD_EXCLUDE_PLATFORM="linux/arm/v6"

@@ -1,4 +1,13 @@
+# 构建选项
+# 优先级高于默认值 低于命令行中直接指定
+
+# 构建文件 Dockerfile 或 bakefile
+# OPT_BUILD_FILE="Dockerfile"
 
 # 构建目标平台
-# ubuntu 官方镜像没有 linux/arm/v6 架构的
-OPT_BUILD_PLATFORM="linux/amd64,linux/arm64,linux/arm/v7"
+# 注意: 如果同时存在于排除平台也会被排除
+# OPT_BUILD_PLATFORM="linux/amd64,linux/arm64,linux/arm/v7"
+
+# 排除构建目标平台
+# ubuntu 官方镜像没有 linux/arm/v6 架构
+OPT_BUILD_EXCLUDE_PLATFORM="linux/arm/v6"

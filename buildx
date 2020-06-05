@@ -191,7 +191,24 @@ get_build_platform() {
         return
     }
 
+    # 指定平台
+    [[ -n "$OPT_BUILD_PLATFORM" ]] && \
+        OPT_BUILD_PLATFORM=$(echo $OPT_BUILD_PLATFORM | tr -s ' ' ',')
     local plat=${OPT_BUILD_PLATFORM:-$DEF_BUILD_PLATFORMS}
+
+    # 排除平台
+    [[ -n "$OPT_BUILD_EXCLUDE_PLATFORM" ]] && {
+        arr=(${OPT_BUILD_EXCLUDE_PLATFORM//,/ })
+        for _e in ${arr[@]}; do
+            plat=${plat//$_e/}
+        done
+        # 删除重复`,`
+        plat=$(echo $plat | tr -s ',' ',')
+        # 删除开头头或末尾的`,`
+        plat=${plat##,}
+        plat=${plat%%,}
+    }
+
     echo ${CMD_PLATFORM:-$plat}
 }
 
@@ -397,21 +414,21 @@ while (( ${#} )); do
         --pull )
             CMD_PULL=true
             ;;
-        --build-target )
+        --build-target|--bt )
             shift 1
             CMD_BUILD_TARGET="$CMD_BUILD_TARGET $1"
             ;;
-        --build-arg )
+        --build-arg|--ba )
             shift 1
             arg=${1:-}
             [[ -n "$arg" ]] && CMD_BUILD_ARGS="$CMD_BUILD_ARGS $arg"
             ;;
-        --build-opt )
+        --build-opt|--bo )
             shift 1
             arg=${1:-}
             [[ -n "$arg" ]] && CMD_BUILD_OPTS="$CMD_BUILD_OPTS $arg"
             ;;
-        --build-force )
+        --build-force|--bf )
             CMD_BUILD_OPTS="$CMD_BUILD_OPTS --no-cache"
             ;;
         --force|-f )
