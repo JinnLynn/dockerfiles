@@ -15,32 +15,32 @@ B,gogs
 # 版本稳定或长久未更新，无需每次build
 # ==================================
 # 稳定
-# Pushed:   2020-04-30
+# Pushed:   2020-05-30
 B,ddns
 B,freedom
 
 # Updated:  2016-11-07
-# Pushed:   2020-04-30
+# Pushed:   2020-05-30
 # https://github.com/jech/polipo
 B,polipo
 
 # Updated:  2020-02-18 v1.6.7
-# Pushed:   2020-04-30
+# Pushed:   2020-05-30
 # bypy已进入维护阶段，除非bug否则不会更新
 # https://github.com/houtianze/bypy
 B,bypy
 
 # Updated:  2017-08-24 v1.2.1
-# Pushed:   2020-05-11
+# Pushed:   2020-05-30
 # https://sourceforge.net/projects/minidlna/
 B,minidlna
 
 # Updated:  2015-05-08 v0.7.0
-# Pushed:   2020-05-19
+# Pushed:   2020-05-30
 # https://httpbin.org/
 B,httpbin
 
 # Updated:  2018-01-02
-# Pushed:   2020-05-11
+# Pushed:   2020-05-30
 # http://www.udpxy.com/
 B,udpxy
