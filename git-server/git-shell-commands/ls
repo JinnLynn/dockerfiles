@@ -3,9 +3,8 @@
 
 goto_git_repo_dir || exit 1
 
-[ "$1" == "-q" ] && {
-    ls --color=auto -lh
-    exit
+[ -n "$1" ] && {
+    cd "$1" 2>/dev/null || exit 1
 }
 
 print_if_bare_repo='
@@ -16,4 +15,7 @@ print_if_bare_repo='
     fi
 '
 
-find -type d -name "*.git" -exec sh -c "$print_if_bare_repo" -- \{} \; -prune 2>/dev/null
+find -maxdepth 1 -type d -name "*.git" -exec sh -c "$print_if_bare_repo" -- \{} \; -prune 2>/dev/null | \
+    awk '{printf "%s|%s\n", $2, $1}' | \
+    column -ts "|" | \
+    sort

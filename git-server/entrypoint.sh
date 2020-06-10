@@ -1,4 +1,9 @@
 #!/bin/sh
+
+if [ -n "$@" ]; then
+    exec $@
+fi
+
 GIT_USER=${GIT_USER:-git}
 GIT_USER_ID=${GIT_USER_ID:-1000}
 GIT_GROUP=${GIT_GROUP:-git}
@@ -6,9 +11,9 @@ GIT_GROUP_ID=${GIT_GROUP_ID:-1000}
 
 # Check if user exists
 if ! id -u ${GIT_USER} > /dev/null 2>&1; then
-	echo "The user ${GIT_USER} does not exist, creating..."
-	addgroup -g ${GIT_GROUP_ID} ${GIT_GROUP}
-	adduser -u ${GIT_USER_ID} -G ${GIT_GROUP} -D -s /usr/bin/git-shell ${GIT_USER}
+    echo "The user ${GIT_USER} does not exist, creating..."
+    addgroup -g ${GIT_GROUP_ID} ${GIT_GROUP}
+    adduser -u ${GIT_USER_ID} -G ${GIT_GROUP} -D -s /usr/bin/git-shell ${GIT_USER}
     rand_pwd=$(cat /proc/sys/kernel/random/uuid | awk -F '-' '{print $1}')
     echo "${GIT_USER}:$rand_pwd" | chpasswd 2>/dev/null
 
@@ -27,7 +32,7 @@ for k in rsa dsa ecdsa ed25519; do
 done
 
 # 禁止密码登陆
-sed -i s/#PasswordAuthentication.*/PasswordAuthentication\ no/ /etc/ssh/sshd_config
+sed -i "s/#PasswordAuthentication.*/PasswordAuthentication\ no/" /etc/ssh/sshd_config
 
 cd /home/${GIT_USER}
 
@@ -42,7 +47,7 @@ if [ -n "$(ls /app/etc/*.pub 2>/dev/null)" ]; then
 fi
 
 # repo
-ln -sf /app/local/ /repo
-chown ${GIT_USER}:${GIT_GROUP} /repo
+chown -R ${GIT_USER}:${GIT_GROUP} /app/local
+ln -sf /app/local /repo
 
-exec "$@"
+exec /usr/sbin/sshd -D
