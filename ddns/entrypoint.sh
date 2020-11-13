@@ -4,6 +4,7 @@ DDNS_TOKEN=${DDNS_TOKEN:-}
 DDNS_DOMAIN=${DDNS_DOMAIN:-}
 DDNS_IP_SERVICE=${DDNS_IP_SERVICE:-http://ip.3322.net}
 DDNS_CHECK_INTERVAL=${DDNS_CHECK_INTERVAL:-60}
+DDNS_IPV6=${DDNS_IPV6:-}
 
 DDNS_IP=${DDNS_IP:-}
 DDNS_PSL=${DDNS_PSL:-/app/etc/psl.dat}
@@ -27,7 +28,9 @@ get_ip() {
             return 1
         }
     } || {
-        ip=$(curl -s $DDNS_IP_SERVICE)
+        local opts=
+        [ -n "$DDNS_IPV6" ] && opts="--ipv6" || opts="--ipv4"
+        ip=$(curl -s $opts $DDNS_IP_SERVICE)
         is_ip $ip || {
             log_err "fetch current ip fail."
             return 1
@@ -106,6 +109,12 @@ while (( ${#} )); do
             shift 1
             DDNS_IP=${1:-}
             ;;
+        -4 )
+            DDNS_IPV6=
+            ;;
+        -6 )
+            DDNS_IPV6=true
+            ;;
         --slient|-s )
             SILENT=true
             ;;
@@ -113,7 +122,7 @@ while (( ${#} )); do
             REPEAT=true
             ;;
         --help|-h )
-            echo "USAGE: $0 [-t|--token TOKEN] [-d|--domain DOMAIN] [--ip|-i IP] [--repeat|-r] [--slient|-s]"
+            echo "USAGE: $0 [-t|--token TOKEN] [-d|--domain DOMAIN] [--ip|-i IP] [--repeat|-r] [--slient|-s] [-6|-4]"
             exit 0
             ;;
         -* )
