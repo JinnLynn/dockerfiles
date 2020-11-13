@@ -17,8 +17,8 @@ IPSET_CNIP=${IPSET_CNIP:-CNIP}
 # IP数据地址
 IPDATA_URI=${IPDATA_URI:-https://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest}
 # cnip data
-CNIP_FILE=/app/opt/cnip.txt
-CNIP_ETAG=/app/opt/cnip.etag
+CNIP_FILE=/app/local/cnip.txt
+CNIP_ETAG=/app/local/cnip.etag
 
 TPROXY_MARK="0x2333/0x2333"
 
