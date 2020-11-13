@@ -3,7 +3,7 @@ variable "DOCKER_USER" {
 }
 
 variable "LATEST_VERSION" {
-    default = "3.11"
+    default = "3.12"
 }
 
 group "default" {
