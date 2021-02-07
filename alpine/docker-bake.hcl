@@ -3,7 +3,7 @@ variable "DOCKER_USER" {
 }
 
 variable "LATEST_VERSION" {
-    default = "3.12"
+    default = "3.13"
 }
 
 group "default" {
@@ -21,6 +21,14 @@ target "edge" {
     tags = ["${DOCKER_USER}/alpine:edge"]
     args = {
         VERSION = "edge"
+    }
+}
+
+target "3.13" {
+    inherits = ["_base"]
+    tags = ["${DOCKER_USER}/alpine:3.13"]
+    args = {
+        VERSION = "3.13"
     }
 }
 
