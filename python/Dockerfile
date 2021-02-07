@@ -1,19 +1,20 @@
-ARG ALPINE_VERSION
-FROM jinnlynn/alpine${ALPINE_VERSION:+":$ALPINE_VERSION"}
+FROM jinnlynn/alpine
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
 ARG MIRROR
-ARG VERSION=3
 
 # REF: https://pip.pypa.io/en/stable/user_guide/#environment-variables
 ENV PIP_INDEX_URL="${MIRROR:-https://pypi.doubanio.com/simple/}"
+# REF: https://docs.python.org/3/using/cmdline.html#envvar-PYTHONPYCACHEPREFIX
+ENV PYTHONPYCACHEPREFIX="/app/tmp/pycache"
 
 COPY py-release.sh /app/bin/py-release
 
 RUN set -ex && \
-    apk add --no-cache python${VERSION:-3} && \
-    ln -sf python${VERSION:-3} /usr/bin/python && \
+    apk add --no-cache python3 && \
+    ln -sf python3 /usr/bin/python && \
+    ln -sf pydoc3 /usr/bin/pydoc && \
     wget -O- https://bootstrap.pypa.io/get-pip.py | python
 
 CMD ["python"]

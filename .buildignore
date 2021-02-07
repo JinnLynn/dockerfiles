@@ -19,6 +19,11 @@ B,gogs
 B,ddns
 B,freedom
 
+# Python2自2020.01.01后官方不再提供支持
+# Pushed:   2021-02-05
+B,python:2
+B,flask:py2
+
 # Updated:  2016-11-07
 # Pushed:   2020-05-30
 # https://github.com/jech/polipo
@@ -44,3 +49,10 @@ B,httpbin
 # Pushed:   2020-05-30
 # http://www.udpxy.com/
 B,udpxy
+
+
+# ==================================
+# 暂时意外
+# ==================================
+# youtube-dl因版权问题GitHub版本库被封
+B,youtube-dl:edge

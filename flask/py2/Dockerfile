@@ -1,11 +1,11 @@
-FROM jinnlynn/python
+FROM jinnlynn/python:2
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
 ARG VERSION="1.1.2"
 
 RUN set -ex && \
-    apk add --no-cache uwsgi-python3 && \
+    apk add --no-cache uwsgi-python && \
     pip install --no-cache-dir -U pip "flask${VERSION:+==$VERSION}"
 
 COPY app.py /app/opt/app.py

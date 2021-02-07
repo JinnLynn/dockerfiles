@@ -8,7 +8,7 @@ app = Flask(__name__)
 
 @app.route("/")
 def hello():
-    uwsgi_ver = check_output(['uwsgi', '--version'], encoding='utf8')
+    uwsgi_ver = check_output(['uwsgi', '--version'])
     return "it's work. Python-{} Flask-{} uWSGI-{}".format(
         platform.python_version(),
         flask.__version__,
