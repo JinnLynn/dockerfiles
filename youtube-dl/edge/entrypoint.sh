@@ -21,8 +21,6 @@ clone() {
     git clone --recurse-submodules --depth 1 --single-branch --progress ${REPO_REMOTE} . && \
         git config user.email "${GIT_USER_EMAIL:-you@example.com}" && \
         git config user.name "${GIT_USER_NAME:-YourName}" && \
-        pip install -U pip && \
-        pip install -e . && \
         echo $CUR_TS >$LAST_UPDATE && \
         commit_info "CLONED" && \
         echo "=========="
@@ -71,6 +69,10 @@ fi
 cd - >/dev/null
 
 # =====
+
+# REF: https://github.com/ytdl-org/youtube-dl/blob/master/youtube-dl.plugin.zsh
+export PYTHONPATH="${REPO_LOCAL}:${PYTHONPATH}"
+export PATH="${REPO_LOCAL}/bin:${PATH}"
 
 # 直接指定参数 调用外部下载工具多线程下载
 if [ "${1:0:1}" = '-' ]; then
