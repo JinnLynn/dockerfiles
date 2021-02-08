@@ -6,7 +6,7 @@ ARG VERSION="1.1.2"
 
 RUN set -ex && \
     apk add --no-cache uwsgi-python && \
-    pip install --no-cache-dir -U pip "flask${VERSION:+==$VERSION}"
+    pip install --no-cache-dir "flask${VERSION:+==$VERSION}"
 
 COPY app.py /app/opt/app.py
 COPY entrypoint.sh /app/bin/entrypoint

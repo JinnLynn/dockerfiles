@@ -14,4 +14,6 @@ RUN set -ex && \
     apk add --no-cache python2 && \
     wget -O- https://bootstrap.pypa.io/2.7/get-pip.py | python
 
+ONBUILD RUN pip install --no-cache-dir -U pip
+
 CMD ["python"]

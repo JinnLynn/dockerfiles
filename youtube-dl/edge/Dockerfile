@@ -8,7 +8,6 @@ COPY entrypoint.sh /app/bin/entrypoint
 
 RUN set -ex && \
     apk add --no-cache ffmpeg ca-certificates aria2 git && \
-    pip install -U --no-cache-dir pip && \
     entrypoint --version
 
 ENTRYPOINT ["entrypoint"]

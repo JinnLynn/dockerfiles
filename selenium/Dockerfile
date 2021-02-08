@@ -5,7 +5,7 @@ LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
 RUN set -ex && \
     apk add --no-cache chromium chromium-chromedriver && \
-    pip install --no-cache-dir -U pip selenium
+    pip install --no-cache-dir selenium
 
 COPY demo.py /app/opt/
 

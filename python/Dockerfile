@@ -17,4 +17,6 @@ RUN set -ex && \
     ln -sf pydoc3 /usr/bin/pydoc && \
     wget -O- https://bootstrap.pypa.io/get-pip.py | python
 
+ONBUILD RUN pip install --no-cache-dir -U pip
+
 CMD ["python"]

@@ -8,7 +8,7 @@ RUN set -ex && \
 ARG VERSION="2021.02.04.1"
 
 RUN set -ex && \
-    pip install -U --no-cache-dir pip "youtube-dl${VERSION:+==$VERSION}"
+    pip install --no-cache-dir "youtube-dl${VERSION:+==$VERSION}"
 
 COPY entrypoint.sh /app/bin/entrypoint
 
