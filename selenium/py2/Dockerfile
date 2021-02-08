@@ -1,4 +1,4 @@
-FROM jinnlynn/python
+FROM jinnlynn/python:2
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 

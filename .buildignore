@@ -20,9 +20,10 @@ B,ddns
 B,freedom
 
 # Python2自2020.01.01后官方不再提供支持
-# Pushed:   2021-02-05
+# Pushed:   2021-02-07
 B,python:2
 B,flask:py2
+B,selenium:py2
 
 # Updated:  2016-11-07
 # Pushed:   2020-05-30
