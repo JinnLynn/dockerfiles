@@ -1,33 +1,76 @@
 #!/usr/bin/env sh
 
-LAST_UPDATE=${LAST_UPDATE:-/app/tmp/last-update}
+REPO_REMOTE=${REPO_REMOTE:-https://github.com/ytdl-org/youtube-dl.git}
+REPO_LOCAL=${REPO_LOCAL:-/app/opt/youtube-dl}
+
+LAST_UPDATE=${LAST_UPDATE:-/app/etc/last-update}
+# 拉取检查间隔 默认: 86400(一天) 当 <=0时禁止拉取
 PULL_INTERVAL=${PULL_INTERVAL:-86400}
 
-update() {
-    cd ${REPO_LOCAL}
-    ts=$(date +%s)
-    if [ -e .git ]; then
-        last_update=$(cat $LAST_UPDATE 2>/dev/null)
-        [ -z "$last_update" ] && last_update=0
-        diff=$(echo "$ts-$last_update" | bc)
-        if [ "$diff" -gt $PULL_INTERVAL ]; then
-            echo "Pull..."
-            git pull --recurse-submodules --depth 1 -qfr
-            echo $ts >$LAST_UPDATE
-        fi
-    else
-        echo "Clone..."
-        git clone --recurse-submodules --depth 1 --single-branch -q ${REPO_REMOTE} .
-        # pull 某些情况需user
-        git config user.email "${GIT_USER_EMAIL:-you@example.com}"
-        git config user.name "${GIT_USER_NAME:-YourName}"
-        pip install -qe .
-        echo $ts >$LAST_UPDATE
-    fi
-    cd - >/dev/null
+CUR_TS=$(date +%s)
+# =====
+
+commit_info() {
+    local title=${1:-"LAST COMMIT"}
+    echo "$title:" $(git log -n1 --format="%h %cs" | tail -n1)
 }
 
-update
+clone() {
+    echo "Clone..."
+    # pull 某些情况需user
+    git clone --recurse-submodules --depth 1 --single-branch --progress ${REPO_REMOTE} . && \
+        git config user.email "${GIT_USER_EMAIL:-you@example.com}" && \
+        git config user.name "${GIT_USER_NAME:-YourName}" && \
+        pip install -U pip && \
+        pip install -e . && \
+        echo $CUR_TS >$LAST_UPDATE && \
+        commit_info "CLONED" && \
+        echo "=========="
+}
+
+pull() {
+    if [ $PULL_INTERVAL -le 0 ]; then
+        echo "Pull Ignored..."
+        return
+    fi
+
+    last_update=$(cat $LAST_UPDATE 2>/dev/null)
+    [ -z "$last_update" ] && last_update=0
+    diff=$(echo "$CUR_TS-$last_update" | bc)
+
+    if [ "$diff" -gt $PULL_INTERVAL ]; then
+        echo "Pull..."
+        git pull --recurse-submodules --depth 1 -qfr && \
+            echo $CUR_TS >$LAST_UPDATE && \
+            commit_info "PULLED" && \
+            echo "=========="
+    fi
+}
+
+
+if [ "$@" = "cleanup" ]; then
+    rm -rfv ${REPO_LOCAL}/*
+    rm -rfv ${REPO_LOCAL}/.*
+    rm -rfv ${LAST_UPDATE}
+    echo "All Removed."
+    exit 0
+fi
+
+mkdir -p "${REPO_LOCAL}"
+cd "${REPO_LOCAL}"
+if [ -e "${REPO_LOCAL}/.git" ]; then
+    pull
+else
+    clone
+fi
+# 版本库提交信息
+if [ "$1" == "--version" ]; then
+    commit_info
+    echo "=========="
+fi
+cd - >/dev/null
+
+# =====
 
 # 直接指定参数 调用外部下载工具多线程下载
 if [ "${1:0:1}" = '-' ]; then
