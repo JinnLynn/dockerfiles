@@ -4,7 +4,7 @@ FROM jinnlynn/alpine
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
-ARG VERSION="0.7.3"
+ARG VERSION="0.7.5"
 
 # x86_64下需要libc6-compat
 RUN set -ex && \
