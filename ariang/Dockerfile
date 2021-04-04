@@ -2,7 +2,7 @@ FROM jinnlynn/httpd
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
-ARG VERSION=1.1.7
+ARG VERSION="1.2.1"
 
 RUN set -ex && \
     DLINK="https://github.com/mayswind/AriaNg/releases/download/${VERSION}/AriaNg-${VERSION}.zip" && \
