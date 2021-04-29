@@ -67,8 +67,8 @@ target "3.9" {
 target "latest" {
     inherits = ["${LATEST_VERSION}"]
 	tags = [
-         "${DOCKER_USER}/alpine",
-         "${DOCKER_USER}/alpine:${LATEST_VERSION}"
+        "${DOCKER_USER}/alpine",
+        "${DOCKER_USER}/alpine:${LATEST_VERSION}"
     ]
     args = {
         VERSION = "${LATEST_VERSION}"
