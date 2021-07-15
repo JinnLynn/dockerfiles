@@ -12,10 +12,10 @@ ENV PYTHONPYCACHEPREFIX="/app/tmp/pycache"
 COPY py-release.sh /app/bin/py-release
 
 RUN set -ex && \
-    apk add --no-cache python3 && \
+    apk add --no-cache python3 py3-pip && \
     ln -sf python3 /usr/bin/python && \
     ln -sf pydoc3 /usr/bin/pydoc && \
-    wget -O- https://bootstrap.pypa.io/get-pip.py | python
+    pip install --no-cache-dir -U pip
 
 ONBUILD RUN pip install --no-cache-dir -U pip
 

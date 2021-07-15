@@ -8,10 +8,15 @@ group "default" {
 
 target "latest" {
 	dockerfile = "Dockerfile"
-    platforms = ["linux/amd64", "linux/arm64", "linux/arm"]
-    pull = true
 	tags = [
          "${DOCKER_USER}/python",
          "${DOCKER_USER}/python:3"
+    ]
+}
+
+target "2" {
+    dockerfile = "Dockerfile.2"
+    tags = [
+        "${DOCKER_USER}/python:2"
     ]
 }
