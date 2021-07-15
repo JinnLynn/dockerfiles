@@ -3,7 +3,7 @@ variable "DOCKER_USER" {
 }
 
 variable "LATEST_VERSION" {
-    default = "3.13"
+    default = "3.14"
 }
 
 group "default" {
@@ -12,7 +12,6 @@ group "default" {
 
 target "_base" {
 	dockerfile = "Dockerfile"
-    platforms = ["linux/amd64", "linux/arm64", "linux/arm"]
     pull = true
 }
 
@@ -21,6 +20,14 @@ target "edge" {
     tags = ["${DOCKER_USER}/alpine:edge"]
     args = {
         VERSION = "edge"
+    }
+}
+
+target "3.14" {
+    inherits = ["_base"]
+    tags = ["${DOCKER_USER}/alpine:3.14"]
+    args = {
+        VERSION = "3.14"
     }
 }
 
@@ -53,6 +60,7 @@ target "3.10" {
     tags = ["${DOCKER_USER}/alpine:3.10"]
     args = {
         VERSION = "3.10"
+        MIRROR = "http://dl-cdn.alpinelinux.org/alpine"
     }
 }
 
