@@ -35,7 +35,6 @@ DEF_BUILD_PLATFORMS=${DEF_BUILD_PLATFORMS%,}
 
 source $BASE_DIR/_scripts/common.sh
 
-BUILDX_MIN_VERSION="v0.4.1"
 LAST_CMD_RUNNED=
 FAILED_RETRY_MAX=${FAILED_RETRY_MAX:-5}
 
@@ -342,16 +341,6 @@ build_single() {
     done
 }
 
-buildx_check() {
-    docker buildx version 1>/dev/null 2>&1 || {
-        exit_err "buildx未安装, 访问: https://github.com/docker/buildx"
-    }
-    cur_ver=$(docker buildx version | awk '{print $2}')
-    [[ $(echo -e "$cur_ver\n$BUILDX_MIN_VERSION" | sort | head -n1) != "$cur_ver" ]] && {
-        exit_err "buildx版本需高于${BUILDX_MIN_VERSION}, 当前版本: ${cur_ver}"
-    }
-}
-
 usage() {
     cat <<EOF
 USAGE: $0 [OPTIONS] [DIR|DOCKERFILE ...]
@@ -478,9 +467,6 @@ is_true $CMD_VERBOSE && {
     echo_green_split
     echo
 }
-
-# 检查
-buildx_check
 
 if [[ $# -eq 0 ]]; then
     build_all
