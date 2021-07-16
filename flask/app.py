@@ -1,3 +1,4 @@
+import sys
 import platform
 from subprocess import check_output
 
@@ -8,7 +9,10 @@ app = Flask(__name__)
 
 @app.route("/")
 def hello():
-    uwsgi_ver = check_output(['uwsgi', '--version'], encoding='utf8')
+    kwargs = {}
+    if sys.version_info.major == 3:
+        kwargs.update(encoding='utf8')
+    uwsgi_ver = check_output(['uwsgi', '--version'], **kwargs)
     return "it's work. Python-{} Flask-{} uWSGI-{}".format(
         platform.python_version(),
         flask.__version__,
