@@ -3,9 +3,8 @@ FROM ubuntu${VERSION:+":$VERSION"}
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
-ARG MIRROR="https://mirrors.aliyun.com/ubuntu/"
-# Aliyun镜像站的ubuntu-ports似乎很久没更新
-ARG MIRROR_PORTS="https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/"
+ARG MIRROR="https://mirrors.cloud.tencent.com/ubuntu"
+ARG MIRROR_PORTS="https://mirrors.cloud.tencent.com/ubuntu-ports"
 ARG TIMEZONE="Asia/Shanghai"
 ARG APP_DIRS
 
@@ -30,7 +29,6 @@ RUN set -ex && \
     echo "deb $MIRROR $UBUNTU_CODENAME main restricted universe multiverse" >/etc/apt/sources.list && \
     echo "deb $MIRROR $UBUNTU_CODENAME-security main restricted universe multiverse" >>/etc/apt/sources.list && \
     echo "deb $MIRROR $UBUNTU_CODENAME-updates main restricted universe multiverse" >>/etc/apt/sources.list && \
-    echo "deb $MIRROR $UBUNTU_CODENAME-backports main restricted universe multiverse" >>/etc/apt/sources.list && \
     apt-get update -qy && \
     apt-get upgrade -y && \
     apt-get remove -qy tzdata && \

@@ -6,7 +6,7 @@ variable "LATEST_VERSION" {
 }
 
 group "default" {
-    targets = ["latest", "18.04"]
+    targets = ["latest"]
 }
 
 target "_base" {
