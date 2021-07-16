@@ -1,3 +1,3 @@
-# Alpine 3.13 chromium 没有arm版本
-# REF: https://pkgs.alpinelinux.org/packages?name=chromium&branch=v3.13
+# Alpine chromium 没有arm版本
+# REF: https://pkgs.alpinelinux.org/packages?name=chromium
 OPT_BUILD_EXCLUDE_PLATFORM="linux/arm/v6,linux/arm/v7"

@@ -1,3 +1,0 @@
-# alpine 3.10 chromium 没有arm/v6版本
-# REF: https://pkgs.alpinelinux.org/packages?name=chromium&branch=v3.10
-OPT_BUILD_EXCLUDE_PLATFORM="linux/arm/v6"

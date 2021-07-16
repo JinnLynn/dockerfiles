@@ -1,4 +1,6 @@
-FROM jinnlynn/python
+ARG PY_VERSION
+FROM jinnlynn/python${PY_VERSION:+":${PY_VERSION}"}
+
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 

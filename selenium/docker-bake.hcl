@@ -7,14 +7,24 @@ group "default" {
 }
 
 target "latest" {
-	dockerfile = "Dockerfile"
-    platforms = ["linux/amd64", "linux/arm64"]
-    pull = true
+    dockerfile = "Dockerfile"
 	tags = [
-         "${DOCKER_USER}/selenium",
-         "${DOCKER_USER}/selenium:py3"
+        "${DOCKER_USER}/selenium",
+        "${DOCKER_USER}/selenium:py3"
     ]
-    // args = {
-    //     PY_VERSION = "3"
-    // }
+    args = {
+        PY_VERSION = "3"
+    }
 }
+
+target "py2" {
+	dockerfile = "Dockerfile"
+	tags = [
+         "${DOCKER_USER}/selenium:py2"
+    ]
+    args = {
+        PY_VERSION = "2"
+    }
+}
+
+
