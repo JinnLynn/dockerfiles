@@ -16,8 +16,7 @@ REPEAT=
 PSL="psl --load-psl-file $DDNS_PSL --print-reg-domain -b"
 
 is_ip() {
-    # [ "$1" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ] && return 0 || return 1
-    return 0
+    [[ "$1" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]] && return 0 || return 1
 }
 
 get_ip() {
