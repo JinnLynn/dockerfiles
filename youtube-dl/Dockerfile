@@ -5,7 +5,7 @@ LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 RUN set -ex && \
     apk add --no-cache ffmpeg ca-certificates aria2
 
-ARG VERSION="2021.02.04.1"
+ARG VERSION="2021.6.6"
 
 RUN set -ex && \
     pip install --no-cache-dir "youtube-dl${VERSION:+==$VERSION}"
