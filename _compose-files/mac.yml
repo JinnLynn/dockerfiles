@@ -1,0 +1,49 @@
+version: "3.7"
+x-media-volume: &media-volume
+    - /vol1/Media/Movie:/mnt/Media/Movie
+    - /vol2/Teleplay:/mnt/Media/Teleplay
+services:
+    test:
+        image: jinnlynn/httpd
+        volumes:
+            - <: *media-volume
+            - /var/log:/var
+    vnstat:
+        image: jinnlynn/vnstat
+        restart: always
+        #! 必须
+        network_mode: host
+        volumes:
+            - ${KITS_LOCAL}/vnstat:/var/lib/vnstat
+    ss:
+        image: jinnlynn/shadowsocks
+        restart: always
+        networks:
+            default:
+                ipv4_address: 172.19.10.11
+        volumes:
+            - ${KITS_LOCAL}/ss-acl.ini:/app/etc/ss-acl.ini
+        ports:
+            - 9527:1080
+            - 9527:1080/udp
+        command: ss-local $SS_AUTH $SS_SERVER -b 0.0.0.0 -l 1080 $SS_ARGS --acl /app/etc/ss-acl.ini
+    polipo:
+        image: jinnlynn/polipo
+        restart: always
+        networks:
+            - default
+        depends_on:
+            - ss
+        ports:
+            - 9580:8123
+            - 9580:8123/udp
+        command:
+            - socksProxyType=socks5
+            - socksParentProxy=172.19.10.11:1080
+networks:
+    default:
+        driver: bridge
+        ipam:
+            config:
+                - subnet: 172.19.10.0/24
+

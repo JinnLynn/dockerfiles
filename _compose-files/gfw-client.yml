@@ -1,59 +1,56 @@
-# 翻墙 客户端
-# 匿名代理: kcptun + redir + dns-tunnel + dnsmasq
-# 代理: socks5 polipo
-version: "3"
+# 翻墙 客户端 172.27.0.x
+version: "3.8"
+x-logging: &logging
+    options:
+        max-size: 10m
 services:
     kcptun:
         image: jinnlynn/kcptun
+        logging: *logging
         restart: always
         networks:
             freegate:
-                ipv4_address: 172.16.10.11
-        logging:
-            options:
-                max-size: 1m
+                ipv4_address: 172.27.0.10
+        ports:
+            - 12948:12948
+            - 12948:12948/udp
         command: kcptun-client -r $KCPTUN_REMOTE $KCPTUN_ARGS
     redir:
         image: jinnlynn/shadowsocks
+        logging: *logging
         restart: always
-        #! 必须
-        network_mode: host
-        logging:
-            options:
-                max-size: 1m
+        network_mode: host #! 必须
         depends_on:
             - kcptun
-        command: ss-redir -s 172.16.10.11 -p 12948 $SS_AUTH -l 9528 --reuse-port $SS_ARGS
+        command: ss-redir $SS_SERVER $SS_AUTH $SS_ARGS -l 9528 --reuse-port
     dns-tunnel:
         image: jinnlynn/shadowsocks
+        logging: *logging
         restart: always
         networks:
             - freegate
-        logging:
-            options:
-                max-size: 1m
         ports:
             - 9553:1080/udp
-        command: ss-tunnel $SS_SERVER $SS_AUTH -l 1080 -L 8.8.8.8:53 $SS_ARGS
+        command: ss-tunnel $SS_SERVER $SS_AUTH $SS_ARGS -l 1080 -L 8.8.8.8:53
     freedom:
         image: jinnlynn/freedom
-        # 如果没有 restart:always 退出时iptables添加的规则会被清空 WHY?
-        restart: always
-        #! 必须
+        logging: *logging
+        restart: always #! 必须 没有退出时iptables添加的规则会被清空 WHY?
         privileged: true
+        # sysctls:
+        #     - net.ipv4.ip_forward=1
         network_mode: host
         environment:
             - REDIR_SERVER
+        volumes:
+            - ${KITS_LOCAL}/freedom:/app/local
         command: ["gfwlist", "keep-alive"]
     dnsmasq:
         image: jinnlynn/dnsmasq
+        logging: *logging
         restart: always
-        #! 必须
         privileged: true
         network_mode: host
-        logging:
-            options:
-                max-size: 1m
         depends_on:
             - dns-tunnel
             - redir
@@ -61,7 +58,6 @@ services:
         volumes:
             - ${KITS}/etc/dnsmasq:/app/etc
             - ${KITS_LOCAL}/dnsmasq:/app/local
-            - ${KITS_LOCAL}/genpac/dnsmasq.conf:/app/local/gfwlist.conf
         command:
             - dnsmasq
             - -k
@@ -72,38 +68,35 @@ services:
             - --dhcp-leasefile=/app/local/dnsmasq.leases
     socks5:
         image: jinnlynn/shadowsocks
+        logging: *logging
         restart: always
-        networks:
-            freegate:
-                ipv4_address: 172.16.10.12
-        logging:
-            options:
-                max-size: 1m
         depends_on:
             - kcptun
+        networks:
+            freegate:
+                ipv4_address: 172.27.0.12
         ports:
             - 9527:1080
             - 9527:1080/udp
-        command: ss-local -s 172.16.10.11 -p 12948 $SS_AUTH -l 1080 $SS_ARGS
+        volumes:
+            - ${KITS}/etc/shadowsocks:/app/etc
+        command: ss-local $SS_SERVER $SS_AUTH $SS_ARGS -l 1080
     polipo:
         image: jinnlynn/polipo
+        logging: *logging
         restart: always
-        networks:
-            - freegate
-        logging:
-            options:
-                max-size: 1m
         depends_on:
             - socks5
+        networks:
+            - freegate
         ports:
             - 9580:8123
-            - 9580:8123/udp
         command:
             - socksProxyType=socks5
-            - socksParentProxy=172.16.10.12:1080
+            - socksParentProxy=172.27.0.12:1080
 networks:
     freegate:
         driver: bridge
         ipam:
             config:
-                - subnet: 172.16.10.0/24
+                - subnet: 172.27.0.0/24

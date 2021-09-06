@@ -1,80 +1,56 @@
-# 翻墙 服务器端
-# ss:   shadowsocks-libev 最新版本
-# ssk:  kuptun 转发ss
-# ss2:  shadowsocks-libev 2.5.6 开启OTA
-# ss2k: kcptun 转发ss2
-# vpn:  L2TP IPSec VPN
-version: "3"
+# 翻墙 服务器端 172.27.0.x
+version: "3.8"
+x-logging: &logging
+    options:
+        max-size: 10m
 services:
     ss:
         image: jinnlynn/shadowsocks
+        logging: *logging
         restart: always
         networks:
             freegate:
-                ipv4_address: 172.16.10.11
-        logging:
-            options:
-                max-size: 1m
-        environment:
-            - SS_PWD
-            - SS_METHOD
-            - SS_ARGS
+                ipv4_address: 172.27.0.10
         ports:
-            - 57700:8388
-            - 57700:8388/udp
-        command: ss-server -s 0.0.0.0 -p 8388 -k $SS_PWD -m $SS_METHOD $SS_ARGS
+            - 57700-57701:8380-8381
+            - 57700-57701:8380-8381/udp
+            - 57711:8380
+            - 57711:8380/udp
+        volumes:
+            - ${KITS}/etc/shadowsocks/:/app/etc/
+        # command: ss-server -s 0.0.0.0 -p 8380 $SS_AUTH $SS_ARGS
+        # command: ["ss-server", "-c", "/app/etc/config.json", "-v"]
+        # 配置的manager_address未生效 源代码中已有，下一个版本可用
+        command: ["ss-manager", "-c", "/app/etc/config.json", "--manager-address", "0.0.0.0:8390"]
+    # ss-alone:
+    #     image: jinnlynn/shadowsocks
+    #     logging: *logging
+    #     restart: always
+    #     networks:
+    #         freegate:
+    #             ipv4_address: 172.27.0.12
+    #     ports:
+    #         - 57710:8388
+    #         - 57710:8388/udp
+    #     command: ss-server -s 0.0.0.0 -p 8388 $SS_AUTH $SS_ARGS_NO_PLUGIN
     ssk:
         image: jinnlynn/kcptun
+        logging: *logging
         restart: always
         networks:
             - freegate
-        logging:
-            options:
-                max-size: 1m
         depends_on:
             - ss
         ports:
             - 55800:29900/udp
-        command: kcptun-server --target 172.16.10.11:8388 $KCPTUN_ARGS
-    ss2:
-        image: jinnlynn/shadowsocks:2.5.6
-        restart: always
-        networks:
-            freegate:
-                ipv4_address: 172.16.10.12
-        logging:
-            options:
-                max-size: 1m
-        environment:
-            - SS_PWD
-            - SS_METHOD
-            - SS_ARGS
-        ports:
-            - 57701:8388
-            - 57701:8388/udp
-        command: ss-server -s 0.0.0.0 -p 8388 -k $SS_PWD -m $SS_METHOD $SS_ARGS
-    ss2k:
-        image: jinnlynn/kcptun
-        restart: always
-        networks:
-            - freegate
-        logging:
-            options:
-                max-size: 1m
-        depends_on:
-            - ss2
-        ports:
-            - 55801:29900/udp
-        command: kcptun-server --target 172.16.10.12:8388 $KCPTUN_ARGS
+        command: kcptun-server --target 172.27.0.10:8380 $KCPTUN_ARGS
     vpn:
         image: hwdsl2/ipsec-vpn-server
+        logging: *logging
         restart: always
         privileged: true
         networks:
             - freegate
-        logging:
-            options:
-                max-size: 1m
         environment:
             - VPN_USER
             - VPN_PASSWORD
@@ -89,4 +65,4 @@ networks:
         driver: bridge
         ipam:
             config:
-                - subnet: 172.16.10.0/24
+                - subnet: 172.27.0.0/24

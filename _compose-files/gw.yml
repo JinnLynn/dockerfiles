@@ -1,0 +1,54 @@
+# 网关上运行的服务 172.27.1.x
+# 翻墙(匿名代理): gfw-client.yml, 同时加载即可
+# 其它服务:
+# 流量统计   内网穿透  DDNS     dnsmasq配置监控更新
+# vnstat    frpc     ddns    dnsmasq-conf
+version: "3.8"
+x-logging: &logging
+    options:
+        max-size: 10m
+services:
+    vnstat:
+        image: jinnlynn/vnstat
+        restart: always
+        network_mode: host #! 必须
+        logging: *logging
+        volumes:
+            - ${KITS_LOCAL}/vnstat:/var/lib/vnstat
+    frpc:
+        image: jinnlynn/frp
+        restart: always
+        logging: *logging
+        # depends_on:
+        #     - dnsmasq
+        volumes:
+            - ${KITS_VAR}/run/frp:/app/etc
+        command: ["frpc"]
+    ddns:
+        image: jinnlynn/ddns
+        restart: always
+        logging: *logging
+        environment:
+            - DDNS_TOKEN
+            - DDNS_DOMAIN
+            - DDNS_IP_SERVICE=ip.sb
+            - DDNS_CHECK_INTERVAL=120
+        command: ["-s", "-r"]
+    # dnsmasq-conf:
+    #     image: jinnlynn/genpac-watch
+    #     restart: always
+    #     logging: *logging
+    #     environment:
+    #         - GPW_REMOTE
+    #         - GPW_TOKEN
+    #         - GPW_CONTAINER
+    #         - GPW_LOCAL=/app/local/gfwlist.conf
+    #     volumes:
+    #         - /var/run/docker.sock:/var/run/docker.sock
+    #         - ${KITS_LOCAL}/dnsmasq:/app/local
+networks:
+    default:
+        driver: bridge
+        ipam:
+            config:
+                - subnet: 172.27.1.0/24
