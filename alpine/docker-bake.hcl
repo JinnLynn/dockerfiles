@@ -60,7 +60,6 @@ target "3.10" {
     tags = ["${DOCKER_USER}/alpine:3.10"]
     args = {
         VERSION = "3.10"
-        MIRROR = "http://dl-cdn.alpinelinux.org/alpine"
     }
 }
 
