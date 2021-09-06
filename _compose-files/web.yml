@@ -1,75 +1,67 @@
-version: "3"
+# web 应用 172.27.1.2x
+version: "3.8"
+x-logging: &logging
+    options:
+        max-size: 10m
 services:
-    nginx:
-        image: jinnlynn/nginx
-        restart: always
-        logging:
-            options:
-                max-size: 1m
-        ports:
-            - 80:80
-            - 443:443
-        volumes:
-            - ${KITS}/etc/nginx/conf.d:/etc/nginx/conf.d
-            - ${KITS}/etc/nginx/certs:/etc/nginx/certs
-            - ${KITS}/etc/nginx/sites-enabled:/etc/nginx/sites-enabled
-            - ${KITS}/etc/nginx/snippets:/etc/nginx/snippets
-            - ${KITS}/share/www:/var/www
     genpac:
-        image: jinnlynn/genpac-server:dev
+        image: jinnlynn/flask:py2
+        logging: *logging
         restart: always
         networks:
-            default:
-                ipv4_address: 172.16.0.21
-        logging:
-            options:
-                max-size: 1m
+            net-web:
+                ipv4_address: 172.26.2.10
         environment:
             GENPAC_CONFIG: /app/etc/config.ini
         volumes:
-            - ${KITS}/share/genpac:/app/opt/genpac
-            - ${KITS}/share/genpac-server:/app/opt/genpac-server
+            - ${KITS}/opt/genpac:/app/opt/genpac
+            - ${KITS}/opt/genpac-server:/app/opt/genpac-server
             - ${KITS}/etc/genpac:/app/etc
-            - ${KITS_VAR}/local/genpac:/app/local
+            - ${KITS_LOCAL}/genpac:/app/local
+            - ${KITS}/etc/genpac/server-start.sh:/app/bin/server-start
+        command: ["server-start"]
     ariang:
         image: jinnlynn/ariang
+        logging: *logging
         restart: always
         networks:
-            default:
-                ipv4_address: 172.16.0.22
-        logging:
-            options:
-                max-size: 1m
+            net-web:
+                ipv4_address: 172.26.2.11
+    file:
+        image: jinnlynn/nginx:fancyindex
+        logging: *logging
+        restart: always
+        networks:
+            net-web:
+                ipv4_address: 172.26.2.12
+        volumes:
+            - ${KITS}/share/public-keys/:/app/mnt/keys/
     toolkit:
-        image: jinnlynn/toolkit
-        build: ${KITS}/share/apps/toolkit
+        image: jinnlynn/flask
+        logging: *logging
         restart: always
         networks:
-            default:
-                ipv4_address: 172.16.0.24
-        logging:
-            options:
-                max-size: 1m
+            net-web:
+                ipv4_address: 172.26.2.13
         environment:
             - LANG
             - LC_ALL
             - LC_CTYPE
             - LANGUAGE
-    # httpbin:
-    #     image: jinnlynn/httpbin
-    #     restart: always
-    #     networks:
-    #         default:
-    #             ipv4_address: 172.16.0.25
-    #     logging:
-    #         options:
-    #             max-size: 1m
-    speedtest:
-        image: jinnlynn/speedtest
+        volumes:
+            - ${KITS}/opt/toolkit:/app/opt
+    httpbin:
+        image: jinnlynn/httpbin
+        logging: *logging
         restart: always
         networks:
-            default:
-                ipv4_address: 172.16.0.26
-        logging:
-            options:
-                max-size: 1m
+            net-web:
+                ipv4_address: 172.26.2.20
+        environment:
+            - UWSGI_MOUNT=/http=httpbin:app
+networks:
+    net-web:
+        driver: bridge
+        ipam:
+            config:
+                - subnet: 172.26.2.0/24

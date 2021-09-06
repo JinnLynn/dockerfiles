@@ -1,0 +1,33 @@
+# 网关上运行的服务 172.27.1.x
+# 翻墙(匿名代理): gfw-client.yml, 同时加载即可
+# 其它服务:
+# 流量统计   内网穿透  DDNS     dnsmasq配置监控更新
+# vnstat    frpc     ddns    dnsmasq-conf
+version: "3.8"
+x-logging: &logging
+    options:
+        max-size: 10m
+services:
+    frpc:
+        image: jinnlynn/frp
+        restart: always
+        logging: *logging
+        volumes:
+            - ${KITS}/etc/frp:/app/etc
+        command: ["frpc"]
+    ddns:
+        image: jinnlynn/ddns
+        restart: always
+        logging: *logging
+        environment:
+            - DDNS_TOKEN
+            - DDNS_DOMAIN
+            - DDNS_IP_SERVICE=ip.sb
+            - DDNS_CHECK_INTERVAL=120
+        command: ["-s", "-r"]
+networks:
+    default:
+        driver: bridge
+        ipam:
+            config:
+                - subnet: 172.27.1.0/24

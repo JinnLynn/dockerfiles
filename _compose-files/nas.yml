@@ -1,0 +1,251 @@
+# NAS
+# TODO: Media File能够更方便的统一配置
+version: "3.8"
+services:
+    #! 系统相关 IP-1x
+    vnstat:
+        image: jinnlynn/vnstat
+        restart: always
+        network_mode: host #! 必须
+        volumes:
+            - ${KITS_LOCAL}/vnstat:/var/lib/vnstat
+    vpn:
+        image: hwdsl2/ipsec-vpn-server
+        privileged: true
+        network_mode: host
+        environment:
+            - VPN_USER
+            - VPN_PASSWORD
+            - VPN_IPSEC_PSK
+        volumes:
+            - /lib/modules:/lib/modules:ro
+    nginx:
+        image: jinnlynn/nginx
+        restart: always
+        ports:
+            - 80:80
+            - 443:443
+            - 5522:5522 # NAS SSH
+            - 5523:5523 # GW SSH
+            - 5544:5544 # GIT SRV
+            - 5568:5568 # Aria2 RPC
+            - 5534:5534
+        volumes:
+            - ${KITS}/etc/nginx/certs/:/etc/nginx/certs/
+            - ${KITS}/etc/nginx/snippet/:/etc/nginx/snippet/
+            - ${KITS}/etc/nginx/conf.d/:/etc/nginx/conf.d/
+            - ${KITS}/etc/nginx/http.d/:/etc/nginx/http.d/
+            - ${KITS}/etc/nginx/stream.d/:/etc/nginx/stream.d/
+            # - ${KITS}/share/www:/var/www
+    frpc:
+        image: jinnlynn/frp
+        restart: always
+        volumes:
+            - ${KITS}/etc/frp/:/app/etc/
+        command: ["frpc"]
+    # #! 媒体、文件服务 IP-2x
+    plex:
+        image: plexinc/pms-docker
+        restart: unless-stopped
+        devices:
+            - /dev/dri:/dev/dri
+        networks:
+            default:
+                ipv4_address: 172.27.1.20
+        environment:
+            - TZ
+            - VERSION=docker
+            - ADVERTISE_IP
+        ports:
+            - 32400:32400/tcp
+            - 3005:3005/tcp
+            - 8324:8324/tcp
+            - 32469:32469/tcp
+            - 1900:1900/udp
+            - 32410:32410/udp
+            - 32412:32412/udp
+            - 32413:32413/udp
+            - 32414:32414/udp
+        volumes:
+            - ${KITS_LOCAL}/plex/config:/config
+            - ${KITS_LOCAL}/plex/transcode:/transcode
+            - ${KITS}/etc/nginx/certs:/certs
+            # -=- Media File START -=-
+            - /vol1:/app/mnt/media
+            # -=- Media File END -=-
+    cloudcmd:
+        image: jinnlynn/cloudcmd
+        restart: unless-stopped
+        networks:
+            default:
+                ipv4_address: 172.27.1.21
+        volumes:
+            - ${KITS}/etc/cloudcmd/:/app/etc/
+            - /vol1:/app/mnt/vol1
+            - /cellar/download:/app/mnt/download
+            - /vol2/doc:/app/mnt/doc
+        command: ["--config", "/app/etc/config.json"]
+    samba:
+        image: dperson/samba
+        restart: unless-stopped
+        network_mode: host
+        environment:
+            - TZ
+            - USERID=${USER_ID}
+            - GROUPID=${GROUP_ID}
+            - USER=${SMB_USER}
+            - USER1=${SMB_USER1}
+            - SHARE=${SMB_SHARE}
+            - SHARE1=${SMB_SHARE1}
+            - SHARE2=${SMB_SHARE2}
+            - SHARE3=${SMB_SHARE3}
+            # 禁用回收站
+            - RECYCLE=no
+        volumes:
+            - /vol2/doc:/app/mnt/Documents
+            - /cellar/download:/app/mnt/Download
+            # -=- Media File START -=-
+            - /vol1:/app/mnt/media
+            # -=- Media File END -=-
+        command: ["-S"]
+    time-machine:
+        image: odarriba/timemachine
+        restart: unless-stopped
+        environment:
+            - AFP_LOGIN
+            - AFP_PASSWORD
+            - AFP_NAME
+            - AFP_SIZE_LIMIT
+            - PUID=1000
+            - PGID=1000
+        ports:
+            - 548:548
+            - 636:636
+        volumes:
+            - /cellar/tm/JMBP.TimeMachine:/timemachine
+    #! 上传下载 IP-3x
+    aria2:
+        image: jinnlynn/aria2
+        restart: unless-stopped
+        networks:
+            default:
+                ipv4_address: 172.27.1.30
+        logging: {options: {max-size: 100m}}
+        volumes:
+            - ${KITS}/etc/aria2:/app/etc
+            - ${KITS_LOCAL}/aria2:/app/local
+            - /cellar/download/aria2:/app/mnt/download
+        command:
+            - "--conf-path=/app/etc/aria2.conf"
+    #! GIT IP-4x
+    gitsrv:
+        image: jinnlynn/git-server
+        restart: unless-stopped
+        networks:
+            default:
+                ipv4_address: 172.27.1.40
+        volumes:
+            - ${KITS}/share/public-keys/key_git.pub:/app/etc/key_git.pub
+            - /etc/ssh/ssh_host_dsa_key:/etc/ssh/ssh_host_dsa_key
+            - /etc/ssh/ssh_host_ecdsa_key:/etc/ssh/ssh_host_ecdsa_key
+            - /etc/ssh/ssh_host_ed25519_key:/etc/ssh/ssh_host_ed25519_key
+            - /etc/ssh/ssh_host_rsa_key:/etc/ssh/ssh_host_rsa_key
+            - /cellar/repo:/app/local
+    gitweb:
+        image: jinnlynn/gitweb
+        restart: unless-stopped
+        networks:
+            default:
+                ipv4_address: 172.27.1.41
+        volumes:
+            - ${KITS}/etc/gitweb/gitweb.conf:/app/etc/gitweb.conf
+            - /cellar/repo:/app/local
+    # #! 其它 5x
+    kvm:
+        image: jinnlynn/webvirtcloud
+        restart: always
+        networks:
+            default:
+                ipv4_address: 172.27.1.50
+        volumes:
+            - ${KITS_LOCAL}/webvirtcloud:/app/opt/webvirtcloud/data
+            - ${KITS}/etc/webvirtcloud/settings.py:/app/opt/webvirtcloud/data/settings.py
+            - /var/run/libvirt/libvirt-sock:/var/run/libvirt/libvirt-sock
+networks:
+    default:
+        driver: bridge
+        ipam:
+            config:
+                - subnet: 172.27.1.0/24
+volumes:
+    netdata_config:
+    netdata_lib:
+    netdata_cache:
+# 暂时禁用的的服务
+x-services:
+    rrshare:
+        image: jinnlynn/rrshare
+        restart: unless-stopped
+        networks:
+            default:
+                ipv4_address: 172.27.1.31
+        environment:
+            - RR_AUTOSTOP=true
+            - RR_UNLOCK_PWD
+            # - RR_MAX_WAIT=60
+        volumes:
+            - ${KITS_LOCAL}/rrshare:/app/opt/rrshareweb/conf
+            - /cellar/download/rrshare:/app/mnt/download
+    netdata:
+        image: netdata/netdata
+        hostname: JNAS
+        restart: unless-stopped
+        networks:
+            default:
+                ipv4_address: 172.27.1.32
+        cap_add:
+            - SYS_PTRACE
+        security_opt:
+            - apparmor:unconfined
+        volumes:
+            - netdata_config:/etc/netdata:ro
+            - netdata_lib:/var/lib/netdata
+            - netdata_cache:/var/cache/netdata
+            - /etc/passwd:/host/etc/passwd:ro
+            - /etc/group:/host/etc/group:ro
+            - /proc:/host/proc:ro
+            - /sys:/host/sys:ro
+            - /etc/os-release:/host/etc/os-release:ro
+    byup:
+        # TODO: APP 暂未同步
+        # 用户不能设为1000:1000
+        image: jinnlynn/bypy
+        restart: unless-stopped
+        logging: {options: {max-size: 100m}}
+        environment:
+            - BYPY_CONFIG_DIR=/app/etc/bypy
+            - BYPY_SYNC_TYPE=up
+            - BYPY_SYNC_DIRS=/app/mnt/media
+            - BYPY_SYNC_DELETE=true            # 不主动删除远程文件 需要时设为true
+        volumes:
+            - ${KITS_LOCAL}/byup:/app/etc/bypy
+            # -=- Media File START -=-
+            - /vol1/Media/Movie:/app/mnt/media/Movie
+            - /vol1/Media/Documentary:/app/mnt/media/Documentary
+            # - /vol2/Teleplay:/app/mnt/media/Teleplay 不上传电视剧
+            - /vol2/Pastime:/app/mnt/media/Pastime
+            # -=- Media File END -=-
+    bydown:
+        image: jinnlynn/bypy
+        restart: unless-stopped
+        user: 1000:1000
+        logging: {options: {max-size: 100m}}
+        environment:
+            - BYPY_CONFIG_DIR=/app/etc/bypy
+            - BYPY_SYNC_TYPE=down
+            - BYPY_SYNC_DIRS=/app/mnt/download
+            - BYPY_SYNC_DELETE=            # 不主动删除本地文件
+            - BYPY_SYNC_INTERVAL=10m
+        volumes:
+            - ${KITS_LOCAL}/bydown:/app/etc/bypy
+            - /cellar/download/baidu:/app/mnt/download
