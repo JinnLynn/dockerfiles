@@ -25,11 +25,6 @@ services:
         ports:
             - 80:80
             - 443:443
-            - 5522:5522 # NAS SSH
-            - 5523:5523 # GW SSH
-            - 5544:5544 # GIT SRV
-            - 5568:5568 # Aria2 RPC
-            - 5534:5534
         volumes:
             - ${KITS}/etc/nginx/certs/:/etc/nginx/certs/
             - ${KITS}/etc/nginx/snippet/:/etc/nginx/snippet/
