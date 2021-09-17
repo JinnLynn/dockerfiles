@@ -25,7 +25,7 @@ USER=${DOCKER_USER:-}
 [[ -z "$USER" ]] && USER=$(docker info 2>/dev/null | grep Username | awk '{print $2}')
 
 # 默认构建镜像优先顺序
-DEF_BUILD_PRIORITY=${DOCKER_BUILD_PRIORITY:-"alpine ubuntu python go node php php/fpm flask httpd nginx nginx/stream git"}
+DEF_BUILD_PRIORITY=${DOCKER_BUILD_PRIORITY:-"alpine ubuntu ssh python go node php php/fpm flask httpd nginx nginx/stream git"}
 # 默认构架镜像的CUP架构
 DEF_BUILD_ARCHS=${DOCKER_BUILD_ARCHS:-"amd64 arm64 arm/v7 arm/v6"}
 # 默认构建架构平台
