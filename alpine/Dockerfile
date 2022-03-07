@@ -18,7 +18,9 @@ RUN set -ex && \
     echo -e "$MIRROR/$BRANCH/main\\n$MIRROR/$BRANCH/community" >/etc/apk/repositories && \
     [ "$BRANCH" == "edge" ] && echo "$MIRROR/$BRANCH/testing" >>/etc/apk/repositories || true && \
     apk add --no-cache tzdata && \
-    cp "/usr/share/zoneinfo/$TIMEZONE" /etc/localtime && \
+    mkdir -p "/etc/zoneinfo/$(dirname $TIMEZONE)" && \
+    cp "/usr/share/zoneinfo/$TIMEZONE" "/etc/zoneinfo/$TIMEZONE" && \
+    ln -sf /etc/zoneinfo/$TIMEZONE /etc/localtime && \
     apk del --no-cache tzdata && \
     for d in ${APP_DIRS:-bin etc opt mnt local log tmp var}; do mkdir -p /app/$d; done
 
