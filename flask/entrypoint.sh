@@ -8,11 +8,11 @@ UWSGI_PLUGIN=${UWSGI_PLUGIN:-"python"}
 
 if [ -z "$1" -o "${1:0:1}" = "-" ]; then
     set -- uwsgi --socket=${UWSGI_SOCKET} \
-                 --protocol=${UWSGI_PROTOCOL} \
-                 --plugin=${UWSGI_PLUGIN} \
-                 --mount=${UWSGI_MOUNT} \
-                 --manage-script-name \
-                 $@
+                --protocol=${UWSGI_PROTOCOL} \
+                --plugin=${UWSGI_PLUGIN} \
+                --mount=${UWSGI_MOUNT} \
+                --manage-script-name \
+                $@
 fi
 
 exec $@

@@ -3,7 +3,7 @@ FROM jinnlynn/python${PY_VERSION:+":${PY_VERSION}"}
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
-ARG VERSION="2.0.1"
+ARG VERSION="2.0.3"
 
 RUN set -ex && \
     apk add --no-cache uwsgi-python$(py-release -3 && echo 3) && \
