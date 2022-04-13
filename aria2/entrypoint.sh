@@ -2,16 +2,11 @@
 
 ARIA2_CONFIG=${AEIA2_CONFIG:-/app/etc/aria2.conf}
 
-# 没有指定命令
 if [ -z "$@" ]; then
-    opt=""
-    if [ -n "$ARIA2_CONFIG" ]; then
-        opt="$opt --conf-path=$ARIA2_CONFIG"
-    fi
-    exec aria2c $opt
+    set -- aria2c ${ARIA2_CONFIG:+"--conf-path=$ARIA2_CONFIG"} \
+                ${ARIA2_RPC_SECRET:+"--rpc-secret=$ARIA2_RPC_SECRET --enable-rpc=true"}
 fi
 
-# 指定了命令
 if [ "${1:0:1}" = '-' ]; then
     set -- aria2c $@
 fi
