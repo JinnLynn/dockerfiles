@@ -8,9 +8,7 @@ ARG VERSION="0.7.6"
 
 # x86_64下需要libc6-compat
 RUN set -ex && \
-    DLINK="https://github.com/bcicen/ctop/releases/download/${VERSION}/ctop-${VERSION}-linux-$(arch)" && \
-    arch check x86_64 && apk add --no-cache libc6-compat || true && \
-    wget -O /app/bin/ctop $DLINK && \
+    wget -O /app/bin/ctop "https://github.com/bcicen/ctop/releases/download/${VERSION}/ctop-${VERSION}-linux-$(xinfo arch)" && \
     chmod +x /app/bin/ctop
 
 CMD ["ctop"]
