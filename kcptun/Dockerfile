@@ -2,14 +2,14 @@ FROM jinnlynn/alpine
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
-ARG VERSION="20210624"
-ARG ARM="arm7"
+ARG VERSION="20210922"
 
 RUN set -ex && \
-    DLINK=https://github.com/xtaci/kcptun/releases/download/v${VERSION}/kcptun-linux-$(arch --arm ${ARM})-${VERSION}.tar.gz && \
+    ARCH=$(xinfo --armv7 arm7 --armv6 arm6 --armv5 arm5) && \
+    DLINK=https://github.com/xtaci/kcptun/releases/download/v${VERSION}/kcptun-linux-${ARCH}-${VERSION}.tar.gz && \
     wget -O- $DLINK | tar xz -C /app/bin && \
     cd /app/bin && \
-    ln -sf server_linux_$(arch --arm ${ARM}) kcptun-server && \
-    ln -sf client_linux_$(arch --arm ${ARM}) kcptun-client
+    ln -sf server_linux_${ARCH} kcptun-server && \
+    ln -sf client_linux_${ARCH} kcptun-client
 
 CMD ["kcptun-server", "--help"]
