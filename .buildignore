@@ -5,6 +5,7 @@
 # B,IMAGE[:TAG] build忽略
 # M,IMAGE manifest忽略
 # ==================================
+B,alpine:future
 B,ztest
 B,genpac-server:dev
 P,genpac-watch
@@ -41,8 +42,8 @@ B,bypy
 # https://sourceforge.net/projects/minidlna/
 B,minidlna
 
-# Updated:  2015-05-08 v0.7.0
-# Pushed:   2020-05-30
+# Updated:  2018-11-08 f8ec666b4d1b654e4ff6aedd356f510dcac09f83
+# Pushed:   2021-04-04
 # https://httpbin.org/
 B,httpbin
 

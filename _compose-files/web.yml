@@ -7,10 +7,10 @@ services:
     genpac:
         image: jinnlynn/flask:py2
         logging: *logging
-        restart: always
+        restart: unless-stopped
         networks:
             net-web:
-                ipv4_address: 172.26.2.10
+                ipv4_address: 172.22.1.10
         environment:
             GENPAC_CONFIG: /app/etc/config.ini
         volumes:
@@ -23,26 +23,26 @@ services:
     ariang:
         image: jinnlynn/ariang
         logging: *logging
-        restart: always
+        restart: unless-stopped
         networks:
             net-web:
-                ipv4_address: 172.26.2.11
+                ipv4_address: 172.22.1.11
     file:
         image: jinnlynn/nginx:fancyindex
         logging: *logging
-        restart: always
+        restart: unless-stopped
         networks:
             net-web:
-                ipv4_address: 172.26.2.12
+                ipv4_address: 172.22.1.12
         volumes:
             - ${KITS}/share/public-keys/:/app/mnt/keys/
     toolkit:
         image: jinnlynn/flask
         logging: *logging
-        restart: always
+        restart: unless-stopped
         networks:
             net-web:
-                ipv4_address: 172.26.2.13
+                ipv4_address: 172.22.1.13
         environment:
             - LANG
             - LC_ALL
@@ -53,10 +53,10 @@ services:
     httpbin:
         image: jinnlynn/httpbin
         logging: *logging
-        restart: always
+        restart: unless-stopped
         networks:
             net-web:
-                ipv4_address: 172.26.2.20
+                ipv4_address: 172.22.1.20
         environment:
             - UWSGI_MOUNT=/http=httpbin:app
 networks:
@@ -64,4 +64,4 @@ networks:
         driver: bridge
         ipam:
             config:
-                - subnet: 172.26.2.0/24
+                - subnet: 172.22.1.0/24

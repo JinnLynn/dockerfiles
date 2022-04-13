@@ -46,7 +46,7 @@ services:
             - /dev/dri:/dev/dri
         networks:
             default:
-                ipv4_address: 172.27.1.20
+                ipv4_address: 172.22.0.20
         environment:
             - TZ
             - VERSION=docker
@@ -73,7 +73,7 @@ services:
         restart: unless-stopped
         networks:
             default:
-                ipv4_address: 172.27.1.21
+                ipv4_address: 172.22.0.21
         volumes:
             - ${KITS}/etc/cloudcmd/:/app/etc/
             - /vol1:/app/mnt/vol1
@@ -124,7 +124,7 @@ services:
         restart: unless-stopped
         networks:
             default:
-                ipv4_address: 172.27.1.30
+                ipv4_address: 172.22.0.30
         logging: {options: {max-size: 100m}}
         volumes:
             - ${KITS}/etc/aria2:/app/etc
@@ -138,7 +138,7 @@ services:
         restart: unless-stopped
         networks:
             default:
-                ipv4_address: 172.27.1.40
+                ipv4_address: 172.22.0.40
         volumes:
             - ${KITS}/share/public-keys/key_git.pub:/app/etc/key_git.pub
             - /etc/ssh/ssh_host_dsa_key:/etc/ssh/ssh_host_dsa_key
@@ -151,7 +151,7 @@ services:
         restart: unless-stopped
         networks:
             default:
-                ipv4_address: 172.27.1.41
+                ipv4_address: 172.22.0.41
         volumes:
             - ${KITS}/etc/gitweb/gitweb.conf:/app/etc/gitweb.conf
             - /cellar/repo:/app/local
@@ -161,7 +161,7 @@ services:
         restart: always
         networks:
             default:
-                ipv4_address: 172.27.1.50
+                ipv4_address: 172.22.0.50
         volumes:
             - ${KITS_LOCAL}/webvirtcloud:/app/opt/webvirtcloud/data
             - ${KITS}/etc/webvirtcloud/settings.py:/app/opt/webvirtcloud/data/settings.py
@@ -171,7 +171,7 @@ networks:
         driver: bridge
         ipam:
             config:
-                - subnet: 172.27.1.0/24
+                - subnet: 172.22.0.0/24
 volumes:
     netdata_config:
     netdata_lib:

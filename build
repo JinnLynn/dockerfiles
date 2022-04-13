@@ -345,7 +345,7 @@ usage() {
     cat <<EOF
 USAGE: $0 [OPTIONS] [DIR|DOCKERFILE ...]
 
-需要 buildx 版本高于${BUILDX_MIN_VERSION}的支持, https://github.com/docker/buildx
+基于 buildx(https://github.com/docker/buildx)
 
 Options:
     -h, --help            帮助
@@ -356,7 +356,7 @@ Options:
     -d, --dry-run         仅输出运行过程
     -v, --verbose         详细输出
 
-以build开始的参数都作用于docker build命令:
+以build开始的参数都作用于docker buildx命令:
 
     --build-arg ARG       自定义构建参数，即docker build --build-arg ARG
     --build-opt OPT       docker build参数，已有默认: $DEFAULT_BUILD_OPTS

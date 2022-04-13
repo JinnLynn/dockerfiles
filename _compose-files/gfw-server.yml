@@ -12,10 +12,8 @@ services:
             freegate:
                 ipv4_address: 172.27.0.10
         ports:
-            - 57700-57701:8380-8381
-            - 57700-57701:8380-8381/udp
-            - 57711:8380
-            - 57711:8380/udp
+            - 8380-8381:8380-8381
+            - 8380-8381:8380-8381/udp
         volumes:
             - ${KITS}/etc/shadowsocks/:/app/etc/
         # command: ss-server -s 0.0.0.0 -p 8380 $SS_AUTH $SS_ARGS
@@ -42,7 +40,7 @@ services:
         depends_on:
             - ss
         ports:
-            - 55800:29900/udp
+            - 29900:29900/udp
         command: kcptun-server --target 172.27.0.10:8380 $KCPTUN_ARGS
     vpn:
         image: hwdsl2/ipsec-vpn-server
