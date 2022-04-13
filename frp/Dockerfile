@@ -2,10 +2,10 @@ FROM jinnlynn/alpine
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
-ARG VERSION="0.38.0"
+ARG VERSION="0.41.0"
 
 RUN set -ex && \
-    DLINK="https://github.com/fatedier/frp/releases/download/v${VERSION}/frp_${VERSION}_linux_$(arch).tar.gz" && \
+    DLINK="https://github.com/fatedier/frp/releases/download/v${VERSION}/frp_${VERSION}_linux_$(xinfo arch).tar.gz" && \
     cd /tmp && \
     wget -O- $DLINK | tar xz --strip-components 1 && \
     mv frpc frps /app/bin/ && \
