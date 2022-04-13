@@ -143,4 +143,5 @@ if [ -n "$CHECK_ARCH" ]; then
     check
 fi
 
+echo "已弃用，未来将删除，请使用xinfo替代。" >&2
 print "$@"
