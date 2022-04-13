@@ -6,13 +6,21 @@ variable "LATEST_VERSION" {
 }
 
 group "default" {
-    targets = ["latest"]
+    targets = ["latest", "22.04"]
 }
 
 target "_base" {
     dockerfile = "Dockerfile"
-    platforms = ["linux/amd64", "linux/arm64", "linux/arm"]
+    platforms = ["linux/amd64", "linux/arm64", "linux/arm/v7"]
     pull = true
+}
+
+target "22.04" {
+    inherits = ["_base"]
+    tags = ["${DOCKER_USER}/ubuntu:22.04"]
+    args = {
+        VERSION = "22.04"
+    }
 }
 
 target "20.04" {
