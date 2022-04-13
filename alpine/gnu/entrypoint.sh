@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
-: ${INSTALL_PAGS:=}
+: ${INSTALL_PKGS=}
 
-if [[ -n "$INSTALL_PAGS" ]]; do
-    apk add --no-cache $INSTALL_PAGS
-done
+if [[ -n "${INSTALL_PKGS}" ]]; then
+    apk add --no-cache ${INSTALL_PKGS}
+fi
 
 exec $@
