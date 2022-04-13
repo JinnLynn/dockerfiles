@@ -20,7 +20,7 @@ target "latest" {
 target "py2" {
 	dockerfile = "Dockerfile"
 	tags = [
-         "${DOCKER_USER}/selenium:py2"
+        "${DOCKER_USER}/selenium:py2"
     ]
     args = {
         PY_VERSION = "2"

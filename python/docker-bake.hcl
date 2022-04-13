@@ -9,8 +9,8 @@ group "default" {
 target "latest" {
 	dockerfile = "Dockerfile"
 	tags = [
-         "${DOCKER_USER}/python",
-         "${DOCKER_USER}/python:3"
+        "${DOCKER_USER}/python",
+        "${DOCKER_USER}/python:3"
     ]
 }
 
