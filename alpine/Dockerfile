@@ -5,7 +5,7 @@ LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
 ARG VERSION
 ARG BRANCH="${VERSION:-latest-stable}"
-ARG MIRROR="https://mirrors.cloud.tencent.com/alpine"
+ARG MIRROR="https://mirrors.aliyun.com/alpine"
 ARG TIMEZONE="Asia/Shanghai"
 ARG APP_DIRS
 
