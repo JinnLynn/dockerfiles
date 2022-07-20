@@ -2,14 +2,13 @@ FROM jinnlynn/python
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
-ARG REPO_REMOTE="https://github.com/ytdl-org/youtube-dl.git"
+RUN set -ex && \
+    apk add --no-cache ffmpeg ca-certificates aria2 git
 
 COPY entrypoint.sh /app/bin/entrypoint
 
-RUN set -ex && \
-    apk add --no-cache ffmpeg ca-certificates aria2 git && \
-    entrypoint --version
+ENV REPO_REMOTE="https://github.com/ytdl-org/youtube-dl.git"
 
 ENTRYPOINT ["entrypoint"]
 
-CMD ["--version"]
+CMD ["version"]

@@ -1,11 +1,15 @@
 #!/usr/bin/env sh
 
-REPO_REMOTE=${REPO_REMOTE:-https://github.com/ytdl-org/youtube-dl.git}
-REPO_LOCAL=${REPO_LOCAL:-/app/opt/youtube-dl}
+: ${REPO_REMOTE:="https://github.com/ytdl-org/youtube-dl.git"}
+: ${REPO_LOCAL:="/app/opt/youtube-dl"}
 
-LAST_UPDATE=${LAST_UPDATE:-/app/etc/last-update}
+: ${LAST_UPDATE:="/app/etc/last-update"}
 # 拉取检查间隔 默认: 86400(一天) 当 <=0时禁止拉取
-PULL_INTERVAL=${PULL_INTERVAL:-86400}
+: ${PULL_INTERVAL:=86400}
+
+# REF: https://github.com/ytdl-org/youtube-dl/blob/master/youtube-dl.plugin.zsh
+export PYTHONPATH="${REPO_LOCAL}:${PYTHONPATH}"
+export PATH="${REPO_LOCAL}/bin:${PATH}"
 
 CUR_TS=$(date +%s)
 # =====
@@ -45,15 +49,6 @@ pull() {
     fi
 }
 
-
-if [ "$@" = "cleanup" ]; then
-    rm -rfv ${REPO_LOCAL}/*
-    rm -rfv ${REPO_LOCAL}/.*
-    rm -rfv ${LAST_UPDATE}
-    echo "All Removed."
-    exit 0
-fi
-
 mkdir -p "${REPO_LOCAL}"
 cd "${REPO_LOCAL}"
 if [ -e "${REPO_LOCAL}/.git" ]; then
@@ -61,26 +56,35 @@ if [ -e "${REPO_LOCAL}/.git" ]; then
 else
     clone
 fi
-# 版本库提交信息
-if [ "$1" == "--version" ]; then
-    commit_info
-    echo "=========="
-fi
-cd - >/dev/null
 
 # =====
 
-# REF: https://github.com/ytdl-org/youtube-dl/blob/master/youtube-dl.plugin.zsh
-export PYTHONPATH="${REPO_LOCAL}:${PYTHONPATH}"
-export PATH="${REPO_LOCAL}/bin:${PATH}"
+if [ "$1" == "cleanup" ]; then
+    rm -rfv ${REPO_LOCAL}/*
+    rm -rfv ${REPO_LOCAL}/.*
+    rm -rfv ${LAST_UPDATE}
+    echo "All Removed."
+    exit 0
+fi
 
-# 直接指定参数 调用外部下载工具多线程下载
-if [ "${1:0:1}" = '-' ]; then
-    set -- youtube-dl --external-downloader aria2c \
-                      --external-downloader-args --file-allocation=none \
-                      --external-downloader-args --summary-interval=60 \
-                      --external-downloader-args --max-connection-per-server=16 \
-                      $@
+# 版本库提交信息
+if [ "$1" == "version" ]; then
+    commit_info
+    echo "=========="
+    youtube-dl --version
+    exit $?
+fi
+
+cd - >/dev/null
+
+# 直接指定参数
+# --external-downloader aria2c \
+# --external-downloader-args --file-allocation=none \
+# --external-downloader-args --summary-interval=60 \
+# --external-downloader-args --max-connection-per-server=16 \
+if [ "${1:0:1}" == '-' ]; then
+    set -- youtube-dl \
+            $@
 fi
 
 exec $@
