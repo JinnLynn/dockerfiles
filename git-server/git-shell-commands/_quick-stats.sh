@@ -68,62 +68,62 @@ function detailedGitStats() {
 
     git log --no-merges --numstat --pretty="format:commit %H%nAuthor: %an <%ae>%nDate:   %ad%n%n%w(0,4,4)%B%n" $_since $_until $_pathspec | LC_ALL=C awk '
     function printStats(author) {
-      printf "\t%s:\n", author
+        printf "\t%s:\n", author
 
-      if( more["total"] > 0 ) {
-        printf "\t  insertions:    %d (%.0f%%)\n", more[author], (more[author] / more["total"] * 100)
-      }
+        if( more["total"] > 0 ) {
+            printf "\t  insertions:    %d (%.0f%%)\n", more[author], (more[author] / more["total"] * 100)
+        }
 
-      if( less["total"] > 0 ) {
-        printf "\t  deletions:     %d (%.0f%%)\n", less[author], (less[author] / less["total"] * 100)
-      }
+        if( less["total"] > 0 ) {
+            printf "\t  deletions:     %d (%.0f%%)\n", less[author], (less[author] / less["total"] * 100)
+        }
 
-      if( file["total"] > 0 ) {
-        printf "\t  files:         %d (%.0f%%)\n", file[author], (file[author] / file["total"] * 100)
-      }
+        if( file["total"] > 0 ) {
+            printf "\t  files:         %d (%.0f%%)\n", file[author], (file[author] / file["total"] * 100)
+        }
 
-      if(commits["total"] > 0) {
-      	printf "\t  commits:       %d (%.0f%%)\n", commits[author], (commits[author] / commits["total"] * 100)
-      }
+        if(commits["total"] > 0) {
+            printf "\t  commits:       %d (%.0f%%)\n", commits[author], (commits[author] / commits["total"] * 100)
+        }
 
-      if ( first[author] != "" ) {
-        printf "\t  lines changed: %s\n", more[author] + less[author]
-        printf "\t  first commit:  %s\n", first[author]
-        printf "\t  last commit:   %s\n", last[author]
-      }
+        if ( first[author] != "" ) {
+            printf "\t  lines changed: %s\n", more[author] + less[author]
+            printf "\t  first commit:  %s\n", first[author]
+            printf "\t  last commit:   %s\n", last[author]
+        }
 
-      printf "\n"
+        printf "\n"
     }
 
     /^Author:/ {
-      author = $2 " " $3
-      commits[author] += 1
-      commits["total"] += 1
+        author = $2 " " $3
+        commits[author] += 1
+        commits["total"] += 1
     }
 
     /^Date:/ {
-      $1="";
-      first[author] = substr($0, 2)
-      if(last[author] == "" ) { last[author] = first[author] }
+        $1="";
+        first[author] = substr($0, 2)
+        if(last[author] == "" ) { last[author] = first[author] }
     }
 
     /^[0-9]/ {
-      more[author] += $1
-      less[author] += $2
-      file[author] += 1
+        more[author] += $1
+        less[author] += $2
+        file[author] += 1
 
-      more["total"]  += $1
-      less["total"]  += $2
-      file["total"]  += 1
+        more["total"]  += $1
+        less["total"]  += $2
+        file["total"]  += 1
     }
 
     END {
-      for (author in commits) {
-        if (author != "total") {
-          printStats(author)
+        for (author in commits) {
+            if (author != "total") {
+            printStats(author)
+            }
         }
-      }
-      printStats("total")
+        printStats("total")
     }'
 }
 
@@ -132,9 +132,9 @@ function suggestReviewers() {
     git log --no-merges $_since $_until --pretty=%an $_pathspec $* | head -n 100 | sort | uniq -c | sort -nr | LC_ALL=C awk '
     { args[NR] = $0; }
     END {
-      for (i = 1; i <= NR; ++i) {
-        printf "%s\n", args[i]
-      }
+        for (i = 1; i <= NR; ++i) {
+            printf "%s\n", args[i]
+        }
     }' | column -t -s,
 }
 
@@ -230,9 +230,9 @@ function commitsPerAuthor()  {
     git shortlog $_since $_until --no-merges -n -s | sort -nr | LC_ALL=C awk '
     { args[NR] = $0; sum += $0 }
     END {
-      for (i = 1; i <= NR; ++i) {
-        printf "%s,%2.1f%%\n", args[i], 100 * args[i] / sum
-      }
+        for (i = 1; i <= NR; ++i) {
+            printf "%s,%2.1f%%\n", args[i], 100 * args[i] / sum
+        }
     }' | column -t -s,
 }
 
@@ -241,9 +241,9 @@ function myDailyStats() {
     git diff --shortstat '@{0 day ago}' | sort -nr | tr ',' '\n' | LC_ALL=C awk '
     { args[NR] = $0; }
     END {
-      for (i = 1; i <= NR; ++i) {
-        printf "\t%s\n", args[i]
-      }
+        for (i = 1; i <= NR; ++i) {
+            printf "\t%s\n", args[i]
+        }
     }'
 
     echo -e "\t" $(git log --author="$(git config user.name)" --no-merges --since=$(date "+%Y-%m-%dT00:00:00") --until=$(date "+%Y-%m-%dT23:59:59") --reverse | grep commit | wc -l) "commits"
@@ -280,56 +280,55 @@ function changelogs() {
 # Check if we are currently in a git repo.
 git rev-parse --is-inside-work-tree > /dev/null
 
-if [ $# -eq 1 ]
-  then
-     case $1 in
+if [ $# -eq 1 ]; then
+    case $1 in
         "suggestReviewers")
-           suggestReviewers
-           ;;
+            suggestReviewers
+            ;;
         "detailedGitStats")
-           detailedGitStats
-           ;;
+            detailedGitStats
+            ;;
         "branchTree")
-           branchTree
-           ;;
+            branchTree
+            ;;
         "commitsPerDay")
-           commitsPerDay
-           ;;
+            commitsPerDay
+            ;;
         "commitsPerAuthor")
-           commitsPerAuthor
-           ;;
+            commitsPerAuthor
+            ;;
         "myDailyStats")
-           myDailyStats
-           ;;
+            myDailyStats
+            ;;
         "contributors")
-           contributors
-           ;;
+            contributors
+            ;;
         "branchesByDate")
-           branchesByDate
-           ;;
+            branchesByDate
+            ;;
         "changelogs")
-           changelogs
-           ;;
+            changelogs
+            ;;
         "commitsByWeekday")
-           commitsByWeekday
-           ;;
+            commitsByWeekday
+            ;;
         "commitsByHour")
-           commitsByHour
-           ;;
+            commitsByHour
+            ;;
         "commitsByAuthorByHour")
-           author="${_GIT_AUTHOR:-}"
-	   while [ -z "$author" ]; do read -p "Which author? " author; done
-           commitsByHour "$author"
-           ;;
+            author="${_GIT_AUTHOR:-}"
+                while [ -z "$author" ]; do read -p "Which author? " author; done
+            commitsByHour "$author"
+            ;;
         "commitsByMonth")
-           commitsByMonth
-           ;;
+            commitsByMonth
+            ;;
         *)
-           echo "Invalid argument. Possible arguments: suggestReviewers, detailedGitStats, commitsPerDay, commitsByMonth, commitsByWeekday, commitsByHour, commitsByAuthorByHour, commitsPerAuthor, myDailyStats, contributors, branchTree, branchesByDate, changelogs"
-           exit 1
-           ;;
-     esac
-     exit 0;
+            echo "Invalid argument. Possible arguments: suggestReviewers, detailedGitStats, commitsPerDay, commitsByMonth, commitsByWeekday, commitsByHour, commitsByAuthorByHour, commitsPerAuthor, myDailyStats, contributors, branchTree, branchesByDate, changelogs"
+            exit 1
+            ;;
+    esac
+    exit 0;
 fi
 
 if [ $# -gt 1 ]
@@ -349,70 +348,70 @@ while [ opt != '' ]
         clear
         case $opt in
         1)
-           detailedGitStats
-           show_menu
-           ;;
+            detailedGitStats
+            show_menu
+            ;;
         2)
-           changelogs
-           show_menu
-           ;;
+            changelogs
+            show_menu
+            ;;
         3)
-           myDailyStats
-           show_menu
-           ;;
+            myDailyStats
+            show_menu
+            ;;
         4)
-           branchTree
-           show_menu
-           ;;
+            branchTree
+            show_menu
+            ;;
         5)
-           branchesByDate
-           show_menu
-           ;;
+            branchesByDate
+            show_menu
+            ;;
         6)
-           contributors
-           show_menu
-           ;;
+            contributors
+            show_menu
+            ;;
         7)
-           commitsPerAuthor
-           show_menu
-           ;;
+            commitsPerAuthor
+            show_menu
+            ;;
         8)
-           commitsPerDay
-           show_menu
-           ;;
+            commitsPerDay
+            show_menu
+            ;;
         9)
-           commitsByMonth
-           show_menu
-           ;;
+            commitsByMonth
+            show_menu
+            ;;
         10)
-           commitsByWeekday
-           show_menu
-           ;;
+            commitsByWeekday
+            show_menu
+            ;;
         11)
-           commitsByHour
-           show_menu
-           ;;
+            commitsByHour
+            show_menu
+            ;;
         12)
-           author=''
-	   while [ -z "$author" ]; do read -p "Which author? " author; done
-           commitsByHour "$author"
-           show_menu
-           ;;
+            author=''
+            while [ -z "$author" ]; do read -p "Which author? " author; done
+            commitsByHour "$author"
+            show_menu
+            ;;
         13)
-           suggestReviewers
-           show_menu
-           ;;
+            suggestReviewers
+            show_menu
+            ;;
         q)
-           exit
-           ;;
+            exit
+            ;;
         \n)
-           exit
-           ;;
+            exit
+            ;;
         *)
-           clear
-           option_picked "Pick an option from the menu"
-           show_menu
-           ;;
+            clear
+            option_picked "Pick an option from the menu"
+            show_menu
+            ;;
 
     esac
 fi

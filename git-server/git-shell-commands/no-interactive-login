@@ -1,12 +1,17 @@
 #!/usr/bin/env sh
 git_ver=$(git --version | awk '{print $3}')
 alpine_ver=$(cat /etc/alpine-release)
+ssh_ver=$(ssh -V 2>&1 | awk -F, '{print $1}' | awk -F_ '{print $2}')
+ssl_ver=$(ssh -V 2>&1 | awk -F, '{print $2}' | awk '{print $2}')
 
 cat <<EOF
 
-Welcome to git server (git-v$git_ver alpine-v$alpine_ver)
+Welcome to git server.
 You've successfully authenticated, but I do not
 provide interactive shell access.
+
+alpine_${alpine_ver} git_${git_ver}
+openssh_${ssh_ver} openssl_${ssl_ver}
 
 EOF
 
