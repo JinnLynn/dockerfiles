@@ -14,6 +14,7 @@ ARG TARGETPLATFORM
 
 ENV PATH=/app/bin:$PATH
 
+COPY arch.sh /app/bin/arch
 COPY xinfo.sh /app/bin/xinfo
 
 RUN set -ex && \

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
-: ${INSTALL_PKGS=}
+: ${REQUIRED_PKGS=}
 
-if [[ -n "${INSTALL_PKGS}" ]]; then
-    apk add --no-cache ${INSTALL_PKGS}
+if [[ -n "${REQUIRED_PKGS}" ]]; then
+    apk add --no-cache ${REQUIRED_PKGS}
 fi
 
 exec $@
