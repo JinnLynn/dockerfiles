@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+source $(cd $(dirname $0); pwd)/_common.sh
+
+_CN="$1"
+
+if [ ! -f "$EASYRSA_PKI/private/${_CN}.key" ]; then
+    print_info "Unable to find '${_CN}', please try again or generate the key first"
+    exit 1
+fi
+
+easyrsa revoke "$_CN"
+echo "Generating the Certificate Revocation List :"
+easyrsa gen-crl
+cp -f "$EASYRSA_PKI/crl.pem" "$OPENVPN/crl.pem"
+chmod 644 "$OPENVPN/crl.pem"

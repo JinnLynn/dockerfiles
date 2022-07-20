@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+source $(cd $(dirname $0); pwd)/_common.sh
+
+_STATUS_FILE=/tmp/openvpn.status
+if [[ ! -f "$_STATUS_FILE" ]]; then
+    print_info "No found status file: $_STATUS_FILE"
+    exit 1
+fi
+
+_ARGS=""
+if [[ "$1" != "-i" ]]; then
+    _ARGS="-F"
+fi
+
+tail $_ARGS $_STATUS_FILE

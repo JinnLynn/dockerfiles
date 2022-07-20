@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+source $(cd $(dirname $0); pwd)/_common.sh
+
+$OPT_DIR/_config-gen 2>/dev/null

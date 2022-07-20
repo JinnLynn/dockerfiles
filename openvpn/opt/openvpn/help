@@ -1,0 +1,34 @@
+#!/bin/bash
+source $(cd $(dirname $0); pwd)/_common.sh
+
+_OPENVPN_VER=$(openvpn --version | head -n1 | awk '{print $2}' | xargs)
+_LIB_INFO=$(openvpn --version | head -n2 | tail -n1 | awk -F: '{print $2}' | xargs )
+
+. /etc/os-release
+
+cat <<EOF
+
+INFO:
+  ${NAME} ${VERSION_ID}
+  OpenVPN ${_OPENVPN_VER}
+  ${_LIB_INFO}
+
+COMMAND:
+  ovpn pki-init [nopass]    创建服务端证书
+  ovpn config-check         打印服务端配置文件
+  ovpn client-gen NAME      创建客户端证书
+  ovpn client-get NAME [combined|separated|combined-save]
+                            获取指定客户端，默认合并证书到配置文件并直接输出
+  ovpn client-get-all       获取所有客户配置
+  ovpn client-ls            所有客户端列表
+  ovpn client-revoke NAME   撤销指定客户端
+  ovpn status               运行状态
+  ovpn help                 帮助信息
+
+QUICK START:
+  1. 编辑配置文件: openvpn.sh
+  2. 创建服务端证书: ovpn pki-init
+  3. 创建客户端证书: ovpn client-gen NAME
+  4. 输出客户端配置: ovpn client-get NAME >OUTPUT_NAME
+
+EOF

@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+source $(cd $(dirname $0); pwd)/_common.sh
+
+for name in $EASYRSA_PKI/issued/*.crt; do
+    name=$(basename "$name")
+    name=${name%.crt}
+    if [ "$name" != "$OVPN_CN" ]; then
+        $OPT_DIR/client-get "$name" separated
+        $OPT_DIR/client-get "$name" combined-save
+    fi
+done

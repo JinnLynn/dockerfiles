@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+source $(cd $(dirname $0); pwd)/_common.sh
+
+_CLIENT_NAME="$1"
+
+exec easyrsa build-client-full ${_CLIENT_NAME} nopass

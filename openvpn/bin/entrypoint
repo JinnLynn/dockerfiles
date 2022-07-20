@@ -1,0 +1,126 @@
+#!/usr/bin/env bash
+source ${OPENVPN_SCRIPT:="/app/opt/openvpn"}/_common.sh
+
+_EXEC_NAME=$(basename $0)
+
+if [[ -n "$1" ]] && [[ "${1:0:1}" != "-" ]]; then
+    if [[ "${1:0:1}" != "_" ]] && [[ -x "$OPT_DIR/$1" ]]; then
+        cmd="$OPT_DIR/$1"
+        shift 1
+        exec "$cmd" $@
+    elif [[ -n "$(which $1 2>/dev/null)" ]]; then
+        cmd=$1
+        shift 1
+        exec $cmd $@
+    fi
+
+    print_info "No found Command: $1"
+    exit 1
+fi
+
+if [[ "$_EXEC_NAME" != "entrypoint" ]]; then
+    exec $OPT_DIR/status -i
+fi
+
+# echo "---"
+
+# ===============
+# check PKI
+_PKI_PRIVATE_KEY="${EASYRSA_PKI}/private/${OVPN_CN}.key"
+if [[ ! -f "$_PKI_PRIVATE_KEY" ]]; then
+    print_info "PKI: $_PKI_PRIVATE_KEY 不存在"
+    print_info "使用pki-init创建后重启该容器"
+    exec tail -F /dev/null
+fi
+
+# ===============
+
+USER_ARGS=("${@}")
+ARGS=()
+# ==
+# set +e
+
+# set up iptables rules and routing
+setup_routing() {
+    _post_rounting() {
+        [[ -z "$1" ]] && return
+        iptables -t nat -C POSTROUTING -s $1 -o $OVPN_NAT_DEVICE -j MASQUERADE 2>/dev/null || {
+            iptables -t nat -A POSTROUTING -s $1 -o $OVPN_NAT_DEVICE -j MASQUERADE
+        }
+    }
+    _post_rounting "$OVPN_SERVER_NET"
+    multi_config OVPN_ROUTE | while read -r var; do
+        _post_rounting "$var"
+    done
+}
+
+# Checks if ARGS already contains the given value
+function has_arg {
+    local element
+    for element in "${@:2}"; do
+        [ "${element}" == "${1}" ] && return 0
+    done
+    return 1
+}
+
+# Adds the given argument if it's not already specified.
+function add_arg {
+    local arg="${1}"
+    [ $# -ge 1 ] && local val="${2}"
+    if ! has_arg "${arg}" "${USER_ARGS[@]}"; then
+        ARGS+=("${arg}")
+        [ $# -ge 1 ] && ARGS+=("${val}")
+    fi
+}
+
+
+_CFG_FILE="${OPENVPN}/openvpn.conf"
+
+mkdir -p /dev/net
+if [ ! -c /dev/net/tun ]; then
+    mknod /dev/net/tun c 10 200
+fi
+
+# Setup NAT forwarding if requested
+if [[ "$OVPN_ALL_TRAFFIC" == "1" ]] || [[ "$OVPN_NAT" == "1" ]]; then
+	setup_routing
+fi
+
+$OPT_DIR/_config-gen >$_CFG_FILE
+add_arg "--config" "$_CFG_FILE"
+
+if [ -d "$OPENVPN_CCD" ]; then
+    add_arg "--client-config-dir" "$OPENVPN_CCD"
+fi
+
+# Use a copy of crl.pem as the CRL Needs to be readable by the user/group
+# OpenVPN is running as.  Only pass arguments to OpenVPN if it's found.
+if [ "$EASYRSA_PKI/crl.pem" -nt "$OPENVPN/crl.pem" ]; then
+    cp -f "$EASYRSA_PKI/crl.pem" "$OPENVPN/crl.pem"
+    chmod 644 "$OPENVPN/crl.pem"
+fi
+if [ -r "$OPENVPN/crl.pem" ]; then
+    add_arg "--crl-verify" "$OPENVPN/crl.pem"
+fi
+
+ip -6 route show default 2>/dev/null
+if [[ $? = 0 ]]; then
+    print_info "Checking IPv6 Forwarding"
+    if [ "$(</proc/sys/net/ipv6/conf/all/disable_ipv6)" != "0" ]; then
+        print_info "Sysctl error for disable_ipv6, please run docker with '--sysctl net.ipv6.conf.all.disable_ipv6=0'"
+    fi
+
+    if [ "$(</proc/sys/net/ipv6/conf/default/forwarding)" != "1" ]; then
+        print_info "Sysctl error for default forwarding, please run docker with '--sysctl net.ipv6.conf.default.forwarding=1'"
+    fi
+
+    if [ "$(</proc/sys/net/ipv6/conf/all/forwarding)" != "1" ]; then
+        print_info "Sysctl error for all forwarding, please run docker with '--sysctl net.ipv6.conf.all.forwarding=1'"
+    fi
+fi
+
+print_info "====="
+print_info "EXEC:   openvpn ${ARGS[@]} ${USER_ARGS[@]}"
+print_info "Server: ${OVPN_PROTO}://${OVPN_CN}:${OVPN_PORT}"
+print_info "====="
+exec openvpn ${ARGS[@]} ${USER_ARGS[@]}

@@ -1,0 +1,118 @@
+#!/usr/bin/env bash
+source $(cd $(dirname $0); pwd)/_common.sh
+
+TMP_PUSH_CONFIGFILE=$(mktemp -t vpn_push.XXXXXXX)
+TMP_ROUTE_CONFIGFILE=$(mktemp -t vpn_route.XXXXXXX)
+TMP_EXTRA_CONFIGFILE=$(mktemp -t vpn_extra.XXXXXXX)
+
+on_exit() {
+    print_info "Cleaning up before Exit ..."
+    rm -f $TMP_PUSH_CONFIGFILE
+    rm -f $TMP_ROUTE_CONFIGFILE
+    rm -f $TMP_EXTRA_CONFIGFILE
+}
+trap on_exit EXIT
+
+# Used often enough to justify a function
+getroute() {
+    echo ${1%/*} $(cidr2mask $1)
+}
+
+process_route_config() {
+    local config="$(trim $1)"
+    [[ -z "$config" ]] && return
+    # If user passed "0" skip this, assume no extra routes
+    [[ "$config" == "0" ]] && break;
+    print_info "Processing Route Config: '${config}'"
+    echo "route $(getroute $config)" >> "$TMP_ROUTE_CONFIGFILE"
+}
+
+process_push_config() {
+    local config="$(trim $1)"
+    [[ -z "$config" ]] && return
+    print_info "Processing PUSH Config: '${config}'"
+    echo "push \"$config\"" >> "$TMP_PUSH_CONFIGFILE"
+}
+
+process_extra_config() {
+    local config="$(trim $1)"
+    [[ -z "$config" ]] && return
+    print_info "Processing Extra Config: '${config}'"
+    [[ -n "$config" ]] && echo "$config" >> "$TMP_EXTRA_CONFIGFILE"
+}
+
+cat <<EOF
+verb ${OVPN_VERB}
+
+server $(getroute $OVPN_SERVER_NET)
+proto $OVPN_PROTO
+# Rely on Docker to do port mapping, internally always 1194
+port 1194
+
+dev ${OVPN_DEVICE}${OVPN_DEVICE_NUM}
+topology ${OVPN_TOPOLOGY}
+
+key $EASYRSA_PKI/private/${OVPN_CN}.key
+ca $EASYRSA_PKI/ca.crt
+cert $EASYRSA_PKI/issued/${OVPN_CN}.crt
+dh $EASYRSA_PKI/dh.pem
+tls-auth $EASYRSA_PKI/ta.key
+
+key-direction 0
+keepalive $OVPN_KEEPALIVE
+persist-key
+persist-tun
+
+status /tmp/openvpn.status
+
+user nobody
+group nogroup
+
+EOF
+
+cfg_value "$OVPN_STATUS" "status"
+
+cfg_info
+cfg_value "$OVPN_DATA_CIPHERS" "data-ciphers"
+cfg_value "$OVPN_DATA_CIPHERS_FALLBACK" "data-ciphers-fallback"
+
+cfg_info
+cfg_on "$OVPN_CLIENT_TO_CLIENT" "client-to-client"
+cfg_on "$OVPN_DUPLICATE_CN" "duplicate-cn"
+
+if [[ "$OVPN_PUSH_BLOCK_DNS" == "1" ]]; then
+    process_push_config "block-outside-dns"
+else
+    print_info "Disable default push of 'block-outside-dns'"
+fi
+
+if [[ "$OVPN_DNS" == "1" ]]; then
+    multi_config OVPN_DNS_SERVER | while read -r var; do
+        process_push_config "dhcp-option DNS $var"
+    done
+fi
+
+
+multi_config OVPN_EXTRA_SERVER_CONFIG | while read -r var; do
+    process_extra_config "$var"
+done
+
+multi_config OVPN_ROUTE | while read -r var; do
+    process_route_config "$var"
+done
+
+multi_config OVPN_PUSH | while read -r var; do
+    process_push_config "$var"
+done
+
+cat <<EOF
+
+### Push Configurations
+$(cat $TMP_PUSH_CONFIGFILE)
+
+### Route Configurations Below
+$(cat $TMP_ROUTE_CONFIGFILE)
+
+### Extra Configurations
+$(cat $TMP_EXTRA_CONFIGFILE)
+EOF

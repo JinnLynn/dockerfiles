@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+source $(cd $(dirname $0); pwd)/_common.sh
+
+_CN=$1
+
+if [[ ! -f "$EASYRSA_PKI/private/${_CN}.key" ]]; then
+    echo "Unable to find \"${_CN}\", please try again or generate the key first" >&2
+    exit 1
+fi
+
+# ===
+
+_config_remote() {
+    echo "remote $OVPN_CN $OVPN_PORT $OVPN_PROTO"
+    if [ "$OVPN_PROTO" == "udp6" ]; then
+        echo "remote $OVPN_CN $OVPN_PORT udp"
+    fi
+    if [ "$OVPN_PROTO" == "tcp6" ]; then
+        echo "remote $OVPN_CN $OVPN_PORT tcp"
+    fi
+}
+
+
+
+_config_ca() {
+if [[ "$1" == "separated" ]]; then
+cat <<EOF
+key ${_CN}.key
+ca ca.crt
+cert ${_CN}.crt
+tls-auth ta.key 1
+EOF
+else
+cat <<EOF
+<key>
+$(cat $EASYRSA_PKI/private/${_CN}.key)
+</key>
+<cert>
+$(openssl x509 -in $EASYRSA_PKI/issued/${_CN}.crt)
+</cert>
+<ca>
+$(cat $EASYRSA_PKI/ca.crt)
+</ca>
+key-direction 1
+<tls-auth>
+$(cat $EASYRSA_PKI/ta.key)
+</tls-auth>
+EOF
+fi
+}
+
+gen_client_config() {
+    cat <<EOF
+client
+nobind
+dev ${OVPN_DEVICE}
+remote-cert-tls server
+$(_config_remote)
+
+EOF
+
+    cfg_value "$OVPN_DATA_CIPHERS" "data-ciphers"
+    cfg_value "$OVPN_DATA_CIPHERS_FALLBACK" "data-ciphers-fallback"
+
+    cfg_info
+    cfg_on "$OVPN_ALL_TRAFFIC" "redirect-gateway def1"
+
+    cfg_info
+    _config_ca $1
+
+    cfg_info
+    multi_config OVPN_EXTRA_CLIENT_CONFIG | while read -r var; do
+        cfg_value "$var"
+    done
+}
+
+dir="$OPENVPN/clients/$_CN"
+mkdir -p "$dir"
+case "$2" in
+    "" | "combined")
+        gen_client_config "combined"
+        ;;
+    "separated")
+        mkdir -p "$dir"
+        gen_client_config "separated" > "$dir/${_CN}.ovpn"
+        cp "$EASYRSA_PKI/private/${_CN}.key" "$dir/${_CN}.key"
+        cp "$EASYRSA_PKI/ca.crt" "$dir/ca.crt"
+        cp "$EASYRSA_PKI/issued/${_CN}.crt" "$dir/${_CN}.crt"
+        cp "$EASYRSA_PKI/ta.key" "$dir/ta.key"
+        ;;
+    "combined-save")
+        mkdir -p "$dir"
+        gen_client_config "combined" > "$dir/${_CN}-combined.ovpn"
+        ;;
+    *)
+        echo "This script can produce the client configuration in two formats:" >&2
+        echo "    1. combined (default): All needed configuration and cryptographic material is in one file (Use \"combined-save\" to write the configuration file in the same path as the separated parameter does)." >&2
+        echo "    2. separated: Separated files." >&2
+        echo "Please specify one of those options as second parameter." >&2
+        ;;
+esac
