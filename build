@@ -4,41 +4,68 @@
 # buildx create --name builder --driver docker-container --driver-opt image=moby/buildkit,network=host --use
 # docker buildx inspect --bootstrap
 
-# macOS下没有 realpath
-# REF: https://stackoverflow.com/questions/3572030/bash-script-absolute-path-with-os-x/3572105#3572105
-which realpath 1>/dev/null 2>&1 || {
-    realpath() {
+# 默认构建镜像优先顺序
+: ${DOCKER_BUILD_PRIORITY:="alpine ubuntu ssh python go node php php/fpm flask httpd nginx git"}
+# 默认构架镜像的CUP架构
+: ${DOCKER_BUILD_ARCHS:="amd64 arm64 arm/v7 arm/v6"}
+
+# ==============================================================================
+# buildx init
+
+abspath() {
+    # macOS下没有 realpath
+    # REF: https://stackoverflow.com/questions/3572030/bash-script-absolute-path-with-os-x/3572105#3572105
+    which realpath 1>/dev/null 2>&1 && realpath $1 || {
         [[ $1 = /* ]] && echo "$1" || echo "$PWD/${1#./}"
     }
+}
+
+echo_red() {
+    echo -e "\033[31m$@\033[0m"
+}
+
+echo_green() {
+    echo -e "\033[32m$@\033[0m"
+}
+
+echo_split() {
+    local start=
+    local splitline="================================================="
+    if [[ -n "$@" ]]; then
+        echo "$splitline"
+        echo "\n$@"
+        start="\n"
+    fi
+    echo "$start$splitline"
+}
+
+echo_red_split() {
+    echo_red $(echo_split $@)
+}
+
+echo_green_split() {
+    echo_green $(echo_split $@)
+}
+
+echo_err() {
+    echo_red $@ >&2
+}
+
+exit_err() {
+    [[ -n "$@" ]] && echo_err "$@\n"
+    usage >&2
+    exit 1
+}
+
+exit_ok() {
+    [[ -n "$@" ]] && echo_green $@
+    exit 0
 }
 
 log_error() {
     echo "$1" >>$ERR_LOG_FILE
     echo_red "$1"
 }
-
-# ==============================================================================
-BASE_DIR=$(realpath $(dirname $0))
-
-# 默认docker user
-USER=${DOCKER_USER:-}
-[[ -z "$USER" ]] && USER=$(docker info 2>/dev/null | grep Username | awk '{print $2}')
-
-# 默认构建镜像优先顺序
-DEF_BUILD_PRIORITY=${DOCKER_BUILD_PRIORITY:-"alpine ubuntu ssh python go node php php/fpm flask httpd nginx nginx/stream git"}
-# 默认构架镜像的CUP架构
-DEF_BUILD_ARCHS=${DOCKER_BUILD_ARCHS:-"amd64 arm64 arm/v7 arm/v6"}
-# 默认构建架构平台
-# REF: https://github.com/containerd/containerd/blob/v1.2.6/platforms/platforms.go#L63
-DEF_BUILD_PLATFORMS=$(for _A in $DEF_BUILD_ARCHS; do echo -n "linux/$_A,"; done)
-DEF_BUILD_PLATFORMS=${DEF_BUILD_PLATFORMS%,}
-
-source $BASE_DIR/_scripts/common.sh
-
-LAST_CMD_RUNNED=
-FAILED_RETRY_MAX=${FAILED_RETRY_MAX:-5}
-
-# ==============================================================================
 
 is_true() {
     [[ "$1" == "true" || "$1" == "yes" ]] && return 0 || return 1
@@ -102,13 +129,19 @@ get_local_platform() {
 # $1 要查找的路径 默认: .
 # $2 查找最大层 默认: 3
 find_dirs() {
-    local path=.
-    local depth=3
-    [[ -n "$1" ]] && path="$1"
-    [[ -n "$2" ]] && depth=$2
+    local path=$1
+    local depth=$2
+    # find "${path:=.}" -maxdepth ${depth:=2} ! -ipath '.\/[~\._]*' \( -name "Dockerfile" -o -name "Dockerfile.*" -o -name "docker-bake.hcl" \) | sort
 
     IFS=$'\n'
-    local dirs=$(find "$path" -maxdepth $depth ! -ipath '.\/[~\._]*' -iname "Dockerfile*" | sed 's|\.\/||' | xargs -n1 dirname 2>/dev/null | sort -u)
+    local dirs=$(
+                    find "${path:=.}" -maxdepth ${depth:=3} \
+                        ! -ipath '.\/[~\._]*' \
+                        \( -name "Dockerfile" -o -name "Dockerfile.*" -o -name "docker-bake.hcl" \) | \
+                    sed 's|\.\/||' | \
+                    xargs -n1 dirname 2>/dev/null | \
+                    sort -u
+                )
     unset IFS
 
     echo $dirs
@@ -143,18 +176,18 @@ retry_if_failed() {
 build() {
     local f="$1"
     local buildfile=
+    local dirpath=
 
     (
-        [[ -d "$f" ]] && source $f/options 2>/dev/null
-
-        [[ -n "$OPT_BUILD_FILE" ]] && f="$f/$OPT_BUILD_FILE"
+        [[ -d "$f" ]] && optfile="$f/options" || optfile="$(dirname $f)/options"
+        source "$optfile" 2>/dev/null
 
         if [[ -d "$f" ]]; then
-            [[ -f "$f/docker-bake.hcl" ]] && f="$f/docker-bake.hcl" || f="$f/Dockerfile"
+            [[ -f "$f/docker-bake.hcl" ]] && f="$f/docker-bake.hcl" || f="$f/${OPT_BUILD_FILE:=Dockerfile}"
         fi
 
         [[ ! -f "$f" ]] && {
-            log_error "$1 build file missing."
+            log_error "FAIL: $1 build file missing."
             return 1
         }
 
@@ -225,8 +258,20 @@ build_bake() {
     fi
 
     (
-        DOCKER_USER=$USER
-        run_cmd docker buildx bake $(get_build_option) -f "$f" --set *.context=$build_dir --set *.platform=$(get_build_platform) $CMD_BUILD_TARGET
+        export BUILD_USER=${BUILD_USER:=$USER}
+        export BUILD_CONTEXT=$build_dir
+        export BUILD_NAME=${build_dir%%\/*}
+
+        cd $build_dir # 跳出 () 后会自动退出
+
+        cmd="docker buildx bake $(get_build_option) -f $bakefile --set *.platform=$(get_build_platform)"
+        # echo
+        if is_true $CMD_DRY_RUN; then
+            for e in ${!BUILD_*}; do eval echo "$e: \$$e"; done
+            echo
+            $cmd --print $CMD_BUILD_TARGET
+        fi
+        run_cmd $cmd $CMD_BUILD_TARGET
 
         retry_if_failed
 
@@ -267,7 +312,7 @@ build_dockerfile() {
     local new_suite=()
     for s in ${suite[@]}; do
         is_build_ignored $image $s && \
-            log_error "Build $(get_local_tag $image $s) ignored." || \
+            log_error "IGNORED: $(get_local_tag $image $s)" || \
             new_suite=(${new_suite[@]} $s)
     done
     if [[ -z "${new_suite[@]}" ]]; then
@@ -307,15 +352,46 @@ build_dockerfile() {
 
 build_all() {
     local dirs=$(find_dirs)
+    # 排序
     dirs=($DEF_BUILD_PRIORITY ${dirs[@]})
     # 去重
     dirs=($(awk -v RS=' ' '!a[$1]++' <<< ${dirs[@]}))
 
-    # echo ${dirs[@]}
+    echo ${dirs[@]}
 
     for d in ${dirs[@]}; do
         build "$d"
     done
+}
+
+_build_all() {
+    local dirs=$(find_dirs "." 2)
+
+    # 排序
+    dirs=($DEF_BUILD_PRIORITY ${dirs[@]})
+    # 去重
+    dirs=($(awk -v RS=' ' '!a[$1]++' <<< ${dirs[@]}))
+
+    # echo $dirs
+    for d in ${dirs[@]}; do
+        build "$d"
+    done
+}
+
+_build_single() {
+    local single=$1
+    [[ ! -e "$single" ]] && {
+        log_error "$single missing"
+        return 1
+    }
+
+    if [[ -f "$single" ]] || [[ -f "$single/docker-bake.hcl" ]]; then
+        build "$single"
+    else
+        dirs=$(find_dirs ${single%/} 2)
+        # echo ${dirs[@]}
+        for d in ${dirs[@]}; do build "$d"; done
+    fi
 }
 
 build_single() {
@@ -335,7 +411,7 @@ build_single() {
     #     log_error "$single Dockerfile missing"
     #     return 1
     # }
-
+    echo ${files[@]}
     for f in ${files[@]}; do
         build "$f"
     done
@@ -365,7 +441,24 @@ Options:
 EOF
 }
 
-# ====================================
+# ==============================================================================
+BASE_DIR=$(abspath $(dirname $0))
+
+# 默认docker user
+USER=${DOCKER_USER:-}
+[[ -z "$USER" ]] && USER=$(docker info 2>/dev/null | grep Username | awk '{print $2}')
+
+DEF_BUILD_PRIORITY=${DOCKER_BUILD_PRIORITY}
+DEF_BUILD_ARCHS=${DOCKER_BUILD_ARCHS}
+# 默认构建架构平台
+# REF: https://github.com/containerd/containerd/blob/v1.2.6/platforms/platforms.go#L63
+DEF_BUILD_PLATFORMS=$(for _A in $DEF_BUILD_ARCHS; do echo -n "linux/$_A,"; done)
+DEF_BUILD_PLATFORMS=${DEF_BUILD_PLATFORMS%,}
+
+LAST_CMD_RUNNED=
+FAILED_RETRY_MAX=${FAILED_RETRY_MAX:-5}
+
+# ==============================================================================
 CMD_VERBOSE=false
 CMD_DRY_RUN=false
 CMD_PLATFORM=
@@ -376,8 +469,12 @@ CMD_FORCE=false
 CMD_BUILD_ARGS=
 CMD_BUILD_OPTS=
 CMD_BUILD_TARGET=
+# ==============================================================================
 
-pushd "$BASE_DIR" >/dev/null
+cd "$BASE_DIR" >/dev/null || exit 1
+# trap "echo aaa" EXIT
+
+file_dirs=()
 
 while (( ${#} )); do
     case "$1" in
@@ -439,7 +536,9 @@ while (( ${#} )); do
             ;;
         * )
             # 参数结束
-            break
+            file_dirs=(${file_dirs[@]} "$1")
+            # shift
+            # break
             ;;
     esac
     shift 1
@@ -452,37 +551,40 @@ ERR_LOG_FILE=$(mktemp)
 is_true $CMD_VERBOSE && {
     echo_green "Main Options:"
     echo_green_split
-    echo_green "USER:        $USER"
-    echo_green "LOCAL ARCH:  $(get_local_arch)"
-    echo_green "PLATFORM:    ${CMD_PLATFORM:-$DEF_BUILD_PLATFORMS}"
-    echo_green "PUSH:        $CMD_PUSH"
-    echo_green "LOAD:        $CMD_LOAD"
-    echo_green "PULL:        $CMD_PULL"
-    echo_green "FORCE:       $CMD_FORCE"
-    echo_green "DRY_RUN:     $CMD_DRY_RUN"
-    echo_green "BUILD_OPTS:  $CMD_BUILD_OPTS"
-    echo_green "BUILD_ARGS:  $CMD_BUILD_ARGS"
-    echo_green "BUILD_TARGET:$CMD_BUILD_TARGET"
-    echo_green "FILE/DIR:    $@"
+    echo_green "USER:         $USER"
+    echo_green "LOCAL ARCH:   $(get_local_arch)"
+    echo_green "PLATFORM:     ${CMD_PLATFORM:-$DEF_BUILD_PLATFORMS}"
+    echo_green "PUSH:         $CMD_PUSH"
+    echo_green "LOAD:         $CMD_LOAD"
+    echo_green "PULL:         $CMD_PULL"
+    echo_green "FORCE:        $CMD_FORCE"
+    echo_green "DRY_RUN:      $CMD_DRY_RUN"
+    echo_green "BUILD_OPTS:   $CMD_BUILD_OPTS"
+    echo_green "BUILD_ARGS:   $CMD_BUILD_ARGS"
+    echo_green "BUILD_TARGET: $CMD_BUILD_TARGET"
+    echo_green "FILE/DIR:     ${file_dirs[@]}"
     echo_green_split
     echo
 }
 
-if [[ $# -eq 0 ]]; then
-    build_all
+if [[ ${#file_dirs[@]} -eq 0 ]]; then
+    _build_all
 else
-    while [[ $# -gt 0 ]]; do
-        build_single $1
-        shift $(( $# > 0 ? 1 : 0 ))
+    for i in ${file_dirs[@]}; do
+        _build_single $i
     done
+    # while [[ $# -gt 0 ]]; do
+    #     _build_single $1
+    #     shift $(( $# > 0 ? 1 : 0 ))
+    # done
 fi
 
 [[ -n "$(cat $ERR_LOG_FILE)" ]] && {
     echo
-    echo -e "\033[31m$SPLITLINE"
-    echo "ERRORS:"
-    cat $ERR_LOG_FILE
-    echo -e "$SPLITLINE\033[0m"
+    echo_red_split
+    echo_red "ERRORS:"
+    echo_red "$(cat $ERR_LOG_FILE)"
+    echo_red_split
 }
 
 exit_ok

@@ -1,22 +1,29 @@
-variable "DOCKER_USER" {
-	default = ""
+// =====
+variable "BUILD_NAME" { default = "python" }
+variable "BUILD_USER" { default = "" }
+variable "BUILD_IMAGE" {
+    default = trimspace(BUILD_USER) != "" ? "${BUILD_USER}/${BUILD_NAME}" : "${BUILD_NAME}"
 }
+// =====
+
+variable "LATEST_PYTHON_VERSION" { default="3.10" }
 
 group "default" {
     targets = ["latest"]
 }
 
 target "latest" {
-	dockerfile = "Dockerfile"
 	tags = [
-        "${DOCKER_USER}/python",
-        "${DOCKER_USER}/python:3"
+        "${BUILD_IMAGE}",
+        "${BUILD_IMAGE}:3",
+        "${BUILD_IMAGE}:${LATEST_PYTHON_VERSION}"
     ]
 }
 
+// ===
 target "2" {
     dockerfile = "Dockerfile.2"
     tags = [
-        "${DOCKER_USER}/python:2"
+        "${BUILD_IMAGE}:2"
     ]
 }

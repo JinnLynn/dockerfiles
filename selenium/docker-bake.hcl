@@ -1,16 +1,19 @@
-variable "DOCKER_USER" {
-	default = ""
+// =====
+variable "BUILD_NAME" { default = "selenium" }
+variable "BUILD_USER" { default = "" }
+variable "BUILD_IMAGE" {
+    default = trimspace(BUILD_USER) != "" ? "${BUILD_USER}/${BUILD_NAME}" : "${BUILD_NAME}"
 }
+// =====
 
 group "default" {
     targets = ["latest"]
 }
 
 target "latest" {
-    dockerfile = "Dockerfile"
 	tags = [
-        "${DOCKER_USER}/selenium",
-        "${DOCKER_USER}/selenium:py3"
+        "${BUILD_IMAGE}",
+        "${BUILD_IMAGE}:py3"
     ]
     args = {
         PY_VERSION = "3"
@@ -18,9 +21,8 @@ target "latest" {
 }
 
 target "py2" {
-	dockerfile = "Dockerfile"
 	tags = [
-        "${DOCKER_USER}/selenium:py2"
+        "${BUILD_IMAGE}:py2"
     ]
     args = {
         PY_VERSION = "2"

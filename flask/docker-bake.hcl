@@ -1,6 +1,11 @@
-variable "DOCKER_USER" {
-	default = ""
+// =====
+variable "BUILD_NAME" { default = "flask" }
+variable "BUILD_USER" { default = "" }
+variable "BUILD_IMAGE" {
+    default = trimspace(BUILD_USER) != "" ? "${BUILD_USER}/${BUILD_NAME}" : "${BUILD_NAME}"
 }
+// =====
+
 
 group "default" {
     targets = ["latest"]
@@ -9,9 +14,9 @@ group "default" {
 target "latest" {
     dockerfile = "Dockerfile"
 	tags = [
-        "${DOCKER_USER}/flask",
-        "${DOCKER_USER}/flask:py3",
-        "${DOCKER_USER}/flask:2"
+        "${BUILD_IMAGE}",
+        "${BUILD_IMAGE}:py3",
+        "${BUILD_IMAGE}:2"
     ]
     args = {
         PY_VERSION = "3"
@@ -21,7 +26,7 @@ target "latest" {
 target "v1" {
     dockerfile = "Dockerfile"
     tags = [
-        "${DOCKER_USER}/flask:1"
+        "${BUILD_IMAGE}:1"
     ]
     args = {
         PY_VERSION = "3"
@@ -33,7 +38,7 @@ target "v1" {
 target "py2" {
     dockerfile = "Dockerfile"
     tags = [
-        "${DOCKER_USER}/flask:py2"
+        "${BUILD_IMAGE}:py2"
     ]
     args = {
         PY_VERSION = "2"
