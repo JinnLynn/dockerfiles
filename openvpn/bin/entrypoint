@@ -4,8 +4,8 @@ source ${OPENVPN_SCRIPT:="/app/opt/openvpn"}/_common.sh
 _EXEC_NAME=$(basename $0)
 
 if [[ -n "$1" ]] && [[ "${1:0:1}" != "-" ]]; then
-    if [[ "${1:0:1}" != "_" ]] && [[ -x "$OPT_DIR/$1" ]]; then
-        cmd="$OPT_DIR/$1"
+    if [[ "${1:0:1}" != "_" ]] && [[ -x "$SCRIPT_DIR/$1" ]]; then
+        cmd="$SCRIPT_DIR/$1"
         shift 1
         exec "$cmd" $@
     elif [[ -n "$(which $1 2>/dev/null)" ]]; then
@@ -19,7 +19,7 @@ if [[ -n "$1" ]] && [[ "${1:0:1}" != "-" ]]; then
 fi
 
 if [[ "$_EXEC_NAME" != "entrypoint" ]]; then
-    exec $OPT_DIR/status -i
+    exec $SCRIPT_DIR/status -i
 fi
 
 # echo "---"
@@ -86,7 +86,7 @@ if [[ "$OVPN_ALL_TRAFFIC" == "1" ]] || [[ "$OVPN_NAT" == "1" ]]; then
 	setup_routing
 fi
 
-$OPT_DIR/_config-gen >$_CFG_FILE
+$SCRIPT_DIR/_config-gen >$_CFG_FILE
 add_arg "--config" "$_CFG_FILE"
 
 if [ -d "$OPENVPN_CCD" ]; then

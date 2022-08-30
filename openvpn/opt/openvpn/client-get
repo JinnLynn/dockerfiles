@@ -20,8 +20,6 @@ _config_remote() {
     fi
 }
 
-
-
 _config_ca() {
 if [[ "$1" == "separated" ]]; then
 cat <<EOF
@@ -68,7 +66,7 @@ EOF
     cfg_info
     _config_ca $1
 
-    cfg_info
+    cfg_info "Extra Configurations"
     multi_config OVPN_EXTRA_CLIENT_CONFIG | while read -r var; do
         cfg_value "$var"
     done
