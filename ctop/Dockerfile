@@ -4,11 +4,11 @@ FROM jinnlynn/alpine
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
-ARG VERSION="0.7.6"
+ARG VERSION="0.7.7"
 
 # x86_64下需要libc6-compat
 RUN set -ex && \
-    wget -O /app/bin/ctop "https://github.com/bcicen/ctop/releases/download/${VERSION}/ctop-${VERSION}-linux-$(xinfo arch)" && \
+    wget -O /app/bin/ctop "https://github.com/bcicen/ctop/releases/download/v${VERSION}/ctop-${VERSION}-linux-$(xinfo arch)" && \
     chmod +x /app/bin/ctop
 
 CMD ["ctop"]
