@@ -11,8 +11,9 @@ variable "BUILD_IMAGE" {
 // =====
 variable "LATEST_VERSION" { default = "3.16" }
 
+// NOTE: SEE target gnu
 group "default" {
-    targets = ["latest", "edge", "3_15"]
+    targets = ["latest", "edge"]
 }
 
 target "latest" {
@@ -34,6 +35,7 @@ target "edge" {
     }
 }
 
+// NOTE: gun 依赖 latest 需push latest后再构建
 target "gnu" {
     context = "gnu"
     tags = [
