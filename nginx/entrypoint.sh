@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 . /entrypoint.common
 
 exec_entrypoint_dir() {

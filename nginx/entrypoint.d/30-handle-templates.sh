@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 . /entrypoint.common
 
 : ${NGINX_ENVSUBST_OUTPUT_DIR:="/etc/nginx"}
@@ -48,7 +48,6 @@ if [ ! -w "$NGINX_ENVSUBST_OUTPUT_DIR" ]; then
     echo_msg "ERROR: $NGINX_ENVSUBST_TEMPLATE_DIR exists, but $NGINX_ENVSUBST_OUTPUT_DIR is not writable"
     exit 0
 fi
-
 
 auto_envsubst
 exit 0

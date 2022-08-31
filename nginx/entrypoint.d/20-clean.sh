@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 . /entrypoint.common
 
 : ${NGINX_CLEAN:=}
@@ -16,7 +16,6 @@ clean() {
             echo_msg "ERROR: Remove $path"
     done
 }
-
 
 clean
 
