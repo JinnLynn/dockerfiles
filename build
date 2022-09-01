@@ -500,7 +500,7 @@ while (( ${#} )); do
         --pull )
             CMD_PULL=true
             ;;
-        --build-target|--bt )
+        --build-target|-t )
             shift 1
             CMD_BUILD_TARGET="$CMD_BUILD_TARGET $1"
             ;;
