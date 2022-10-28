@@ -19,6 +19,12 @@ auto_envsubst() {
 
     echo_msg "envsubst: $defined_envs"
 
+    find "$template_dir" -mindepth 1 -maxdepth 1 -type d -print  | while read -r template; do
+        subdir=$(basename $template)
+        echo_msg "Pre-Clean: $output_dir/$subdir"
+        rm -rf $output_dir/$subdir/*
+    done
+
     find "$template_dir" -follow -type f -print | while read -r template; do
         relative_path="${template#$template_dir/}"
         subdir=$(dirname "$relative_path")
@@ -43,7 +49,11 @@ auto_envsubst() {
     done
 }
 
-[ -d "$NGINX_ENVSUBST_TEMPLATE_DIR" ] || exit 0
+if [ ! -d "$NGINX_ENVSUBST_TEMPLATE_DIR" ]; then
+    echo_msg "ERROR: $NGINX_ENVSUBST_TEMPLATE_DIR is nonexistent."
+    exit 0
+fi
+
 if [ ! -w "$NGINX_ENVSUBST_OUTPUT_DIR" ]; then
     echo_msg "ERROR: $NGINX_ENVSUBST_TEMPLATE_DIR exists, but $NGINX_ENVSUBST_OUTPUT_DIR is not writable"
     exit 0

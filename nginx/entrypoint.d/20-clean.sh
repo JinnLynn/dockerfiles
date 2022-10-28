@@ -8,7 +8,7 @@ clean() {
 
     [ -z "$clean_lst" ] && return 0
 
-    for f in "$clean_lst"; do
+    for f in $clean_lst; do
         path=/etc/nginx/$f
         [ ! -e "$path" ] && continue
         rm -rf "$path" && \

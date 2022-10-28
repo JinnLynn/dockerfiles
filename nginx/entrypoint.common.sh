@@ -8,7 +8,7 @@ else
 fi
 
 echo_msg() {
-    echo >&3 "$(basename $0): $@"
+    echo >&3 "[$(basename $0)] $@"
 }
 
 # 以空格或逗号分割字符串并以指定字符串合并
