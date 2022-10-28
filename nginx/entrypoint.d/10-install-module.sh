@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 . /entrypoint.common
 
-: ${NGINX_MODULE_REQUIRED:=}
+: ${NGINX_MODULE:=}
 
 install_module() {
-    local mod_lst=$(join "$NGINX_MODULE_REQUIRED")
+    local mod_lst=$(join "$NGINX_MODULE")
 
     [ -z "$mod_lst" ] && exit 0
 
@@ -27,7 +27,9 @@ install_module() {
     mod_need=$(echo $mod_need)
     if [[ -n "$mod_need" ]]; then
         echo_msg "Installing: $mod_need"
-        apk add --no-cache -q $mod_need
+        apk update -q
+        apk upgrade -q nginx $mod_installed  # HACK: 当有模块需要安装时, 更新nginx和以安装的模块，防止版本不一启动失败
+        apk add -q $mod_need
     fi
 }
 
