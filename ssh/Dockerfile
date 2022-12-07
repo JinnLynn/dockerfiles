@@ -5,4 +5,7 @@ LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 RUN set -ex && \
     apk add --no-cache openssh
 
-CMD ["ssh", "-V"]
+COPY entrypoint.sh /app/bin/entrypoint
+COPY ssh-shell.sh /app/bin/ssh-shell
+
+ENTRYPOINT ["entrypoint"]
