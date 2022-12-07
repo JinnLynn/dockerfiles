@@ -1,0 +1,8 @@
+#!/command/with-contenv bash
+if [[ "${AVAHI_ENABLED:-1}" = "1" ]]; then
+    echo "Starting dbus-daemon"
+    exec dbus-daemon --system --nofork
+else
+    echo "Avahi disabled, not starting dbus-daemon"
+    exec sleep infinity
+fi

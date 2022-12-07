@@ -1,0 +1,3 @@
+#!/command/with-contenv bash
+
+exec smbd ${SMBD_ARGS:--F --no-process-group}

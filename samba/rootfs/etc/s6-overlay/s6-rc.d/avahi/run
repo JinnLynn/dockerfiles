@@ -1,0 +1,13 @@
+#!/command/with-contenv bash
+
+if [[ "${AVAHI_ENABLED:-1}" = "1" ]]; then
+    until [[ -e /var/run/dbus/system_bus_socket ]]; do
+        sleep 1s
+    done
+    echo "Starting Avahi daemon"
+    exec avahi-daemon --no-chroot
+else
+    echo "Avahi disabled, not starting avahi-daemon"
+    exec sleep infinity
+fi
+

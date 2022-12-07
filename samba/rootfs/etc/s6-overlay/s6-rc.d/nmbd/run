@@ -1,0 +1,3 @@
+#!/command/with-contenv bash
+
+exec nmbd ${NMBD_ARGS:--F --no-process-group}
