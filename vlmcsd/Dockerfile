@@ -1,16 +1,20 @@
+FROM jinnlynn/alpine as builder
+
+ARG VERSION="svn1113"
+
+WORKDIR /tmp
+
+RUN apk add --no-cache git make build-base && \
+    wget -O- https://github.com/Wind4/vlmcsd/archive/refs/tags/${VERSION}.tar.gz | tar xz --strip 1 && \
+    make
+
+
+# ===
 FROM jinnlynn/alpine
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
-ARG VERSION="svn1113"
-
-RUN set -ex && \
-    apk add --no-cache --virtual .build-deps make build-base && \
-    cd /tmp && \
-    wget -O- https://github.com/Wind4/vlmcsd/archive/refs/tags/${VERSION}.tar.gz | tar xz --strip 1 && \
-    make && \
-    cp bin/vlm* /app/bin/ && \
-    apk del --no-cache .build-deps
+COPY --from=builder /tmp/bin/vlm* /app/bin/
 
 EXPOSE 1688/tcp
 
