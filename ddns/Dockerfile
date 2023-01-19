@@ -2,14 +2,11 @@ FROM jinnlynn/alpine
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
-ENV DDNS_IP_SERVICE=http://ip.3322.net
-ENV DDNS_TOKEN=
+COPY entrypoint.sh /app/bin/entrypoint
 
 RUN set -ex && \
     apk add --no-cache bash libpsl curl jq && \
-    curl -L# -o /app/var/psl.dat https://github.com/publicsuffix/list/raw/master/public_suffix_list.dat
-
-COPY entrypoint.sh /app/bin/entrypoint
+    entrypoint --update-psl
 
 ENTRYPOINT ["entrypoint"]
 

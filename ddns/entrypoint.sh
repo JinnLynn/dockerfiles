@@ -1,23 +1,28 @@
 #!/usr/bin/env bash
 # dnspod token
-DDNS_TOKEN=${DDNS_TOKEN:-}
-DDNS_DOMAIN=${DDNS_DOMAIN:-}
+: ${DDNS_TOKEN:=}
+: ${DDNS_DOMAIN:=}
 
-DDNS_TYPE_IPV4=${DDNS_TYPE_IPV4:-1}
-DDNS_IPV4=${DDNS_IPV4:-}
-DDNS_IPV4_SERVICE=${DDNS_IP_SERVICE:-http://ip.3322.net}
+# : ${DDNS_IP_SERVICE:="http://ip.3322.net"}
+: ${DDNS_IP_SERVICE:="https://4.ipw.cn"}
 
-DDNS_TYPE_IPV6=${DDNS_TYPE_IPV6:-0}
-DDNS_IPV6=${DDNS_IPV6:-}
-DDNS_IPV6_SERVICE=${DDNS_IPV6_SERVICE:-https://ipv6.icanhazip.com}
+: ${DDNS_TYPE_IPV4:=1}
+: ${DDNS_IPV4:=}
+: ${DDNS_IPV4_SERVICE:=}
 
-DDNS_CHECK_INTERVAL=${DDNS_CHECK_INTERVAL:-60}
-DDNS_HOOK=${DDNS_HOOK:-}
-DDNS_PSL=${DDNS_PSL:-/app/var/psl.dat}
+: ${DDNS_TYPE_IPV6:=0}
+: ${DDNS_IPV6:=}
+# : ${DDNS_IPV6_SERVICE:="https://ipv6.icanhazip.com"}
+: ${DDNS_IPV6_SERVICE:="https://6.ipw.cn"}
+
+: ${DDNS_CHECK_INTERVAL:=60}
+: ${DDNS_HOOK:=}
+: ${DDNS_PSL:="/app/var/psl.dat"}
 
 CONNECT_TIMEOUT=5
 SILENT=
 REPEAT=
+DISABLE_PRINT_INFO=
 
 DEF_CURL_OPTS="-sL -X POST --connect-timeout ${CONNECT_TIMEOUT:-5}"
 
@@ -37,7 +42,7 @@ get_ipv4() {
     [[ -f "$DDNS_HOOK" ]] && source "$DDNS_HOOK"
     # local ip=$DDNS_IPV4
     # is_ipv4 "$ip" || ip=$(curl -sL4 $DDNS_IPV4_SERVICE 2>/dev/null)
-    local ip=${DDNS_IPV4:-$(curl -sL4 $DDNS_IPV4_SERVICE 2>/dev/null)}
+    local ip=${DDNS_IPV4:-$(curl -sL4 ${DDNS_IPV4_SERVICE:-$DDNS_IP_SERVICE} 2>/dev/null)}
     type -a on_get_ipv4 1>/dev/null 2>&1 && {
         ip=$(on_get_ipv4 "$ip")
     }
@@ -46,7 +51,7 @@ get_ipv4() {
 
 get_ipv6() {
     [[ -f "$DDNS_HOOK" ]] && source "$DDNS_HOOK"
-    local ip=${DDNS_IPV6:-$(curl -sL6 $DDNS_IPV6_SERVICE 2>/dev/null)}
+    local ip=${DDNS_IPV6:-$(curl -sL6 ${DDNS_IPV6_SERVICE:-$DDNS_IP_SERVICE} 2>/dev/null)}
     type -a on_get_ipv6 1>/dev/null 2>&1 && {
         ip=$(on_get_ipv6 "$ip")
     }
@@ -61,6 +66,11 @@ log_err() {
     echo $(date +%Y-%m-%d\ %H:%M:%S) $@ 1>&2
 }
 
+fetch_psl_data() {
+    curl -L# -o /app/tmp/psl.dat https://github.com/publicsuffix/list/raw/master/public_suffix_list.dat && \
+        cp /app/tmp/psl.dat ${DDNS_PSL}
+}
+
 # post_api ACTION [PARAMS]
 post_api() {
     local params="login_token=$DDNS_TOKEN&format=json&domain=$domain&sub_domain=$sub_domain"
@@ -68,23 +78,34 @@ post_api() {
     curl $DEF_CURL_OPTS -o $tmp https://dnsapi.cn/$1 -d "$params"
 }
 
-update() {
-    local record_type=$(echo ${1:-A} | tr [:lower:] [:upper:])
-    local cur_ip=
+update_ipv4() {
+    local cur_ip=$(get_ipv4)
+}
 
-    [[ "$record_type" == "AAAA" ]] && cur_ip=$(get_ipv6) || cur_ip=$(get_ipv4)
+update_ipv6() {
+    local cur_ip=$(get_ipv6)
+}
+
+update() {
+    local record_type=$(echo ${1:-A} | tr "[:lower:]" "[:upper:]")
+    local cur_ip
+
+    if [[ "$record_type" == "AAAA" ]]; then
+        cur_ip=$(get_ipv6)
+    else
+        cur_ip=$(get_ipv4)
+    fi
 
     [[ -z "$cur_ip" ]] && {
         log_err "Fetch Current IP[$record_type] fail."
         return 1
     }
 
-    # echo $cur_ip
-
     local tmp=$(mktemp)
 
     post_api Record.List "record_type=$record_type" >$tmp
     # cat $tmp | jq
+    # return
 
     local record_id=$(cat $tmp | jq -r '.records[0].id')
     local record_value=$(cat $tmp | jq -r '.records[0].value')
@@ -112,11 +133,11 @@ update() {
     }
 
 
-    [[ "$record_type" == "A" ]] && {
+    if [[ "$record_type" == "A" ]]; then
         post_api Record.Ddns "record_id=$record_id&value=$cur_ip&record_line=默认" >$tmp
-    } || {
+    else
         post_api Record.Modify "record_id=$record_id&value=$cur_ip&record_line=默认&record_type=AAAA" >$tmp
-    }
+    fi
 
     # cat $tmp | jq
 
@@ -184,6 +205,13 @@ while (( ${#} )); do
             echo "USAGE: $0 [-t|--token TOKEN] [-d|--domain DOMAIN] [--ip|-i IP] [--repeat|-r] [--slient|-s] [-6|-4]"
             exit 0
             ;;
+        --update-psl )
+            fetch_psl_data
+            exit $?
+            ;;
+        --disable-print-info )
+            DISABLE_PRINT_INFO=true
+            ;;
         -* )
             log_err "Argument ERROR: $1"
             ;;
@@ -203,19 +231,21 @@ sub_domain=${DDNS_DOMAIN%.$domain}
 
 [[ "$DDNS_TYPE_IPV4" != 1 ]] && [[ "$DDNS_TYPE_IPV6" != 1 ]] && DDNS_TYPE_IPV4=1
 
-echo "====="
-echo "Domain:   $DDNS_DOMAIN($sub_domain $domain)"
-echo "Token:    $DDNS_TOKEN"
-[[ -n "$REPEAT" ]] && \
-    echo "INTERVAL: $DDNS_CHECK_INTERVAL"
-[[ "$DDNS_TYPE_IPV4" == 1 ]] && {
-    echo "IPv4:     ${DDNS_IPV4:-$DDNS_IPV4_SERVICE}"
-}
-[[ "$DDNS_TYPE_IPV6" == 1 ]] && {
-    echo "IPv6:     ${DDNS_IPV6:-$DDNS_IPV6_SERVICE}"
-}
-echo "====="
-echo
+if [[ -z "$DISABLE_PRINT_INFO" ]]; then
+    echo "====="
+    echo "Domain:   $DDNS_DOMAIN($sub_domain $domain)"
+    echo "Token:    $DDNS_TOKEN"
+    [[ -n "$REPEAT" ]] && \
+        echo "INTERVAL: $DDNS_CHECK_INTERVAL"
+    [[ "$DDNS_TYPE_IPV4" == 1 ]] && {
+        echo "IPv4:     ${DDNS_IPV4:-${DDNS_IPV4_SERVICE:-$DDNS_IP_SERVICE}}"
+    }
+    [[ "$DDNS_TYPE_IPV6" == 1 ]] && {
+        echo "IPv6:     ${DDNS_IPV6:-${DDNS_IPV6_SERVICE:-$DDNS_IP_SERVICE}}"
+    }
+    echo "====="
+    echo
+fi
 
 trap trap_update SIGUSR1
 trap exit SIGINT
