@@ -11,7 +11,7 @@ fi
 SMB_FIXPERM_IGNORE=$(join_config "$SMB_FIXPERM_IGNORE" "|")
 
 for p in $(testparm -s 2>/dev/null | awk -F ' = ' '/\tpath = / {print $2}'); do
-    if echo "$p" | egrep -q "^${SMB_FIXPERM_IGNORE}$"; then
+    if echo "$p" | grep -Eq "^${SMB_FIXPERM_IGNORE}$"; then
         log "Fix Permissions: [SKIP] $p"
         continue
     fi
