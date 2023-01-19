@@ -8,14 +8,11 @@
 : ${UWSGI_MOUNT:="/=app:app"}
 : ${UWSGI_PLUGIN:="python"}
 
-if [ -z "$@" ]; then
-    set -- uwsgi --socket=${UWSGI_SOCKET} \
-            --protocol=${UWSGI_PROTOCOL} \
-            --plugin=${UWSGI_PLUGIN} \
-            --mount=${UWSGI_MOUNT} \
-            --manage-script-name
-elif [ "${1:0:1}" = "-" ]; then
-    set -- uwsgi $@
+if [ -z "$@" ] || [ "${1:0:1}" = "-" ]; then
+    set -- uwsgi --socket="$UWSGI_SOCKET" \
+                --protocol="$UWSGI_PROTOCOL" \
+                --plugin="$UWSGI_PLUGIN" \
+                --mount="$UWSGI_MOUNT" $@
 fi
 
 exec $@
