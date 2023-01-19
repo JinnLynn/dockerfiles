@@ -17,7 +17,7 @@ for name in issued/*.crt; do
 
     name=${name%.crt}
     name=${name#issued/}
-    if [ "$name" != "$OVPN_CN" ]; then
+    if [ "$name" != "$OVPN_SERVER_KEY_FNBASE" ]; then
         # check for revocation or expiration
         command="openssl verify -crl_check -CAfile cacheck.pem $path"
         result=$($command)

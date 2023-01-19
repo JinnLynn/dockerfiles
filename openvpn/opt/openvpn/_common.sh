@@ -24,8 +24,6 @@ if [[ -f "$OPENVPN_ENV" ]]; then
     source "${OPENVPN_ENV}"
 fi
 
-: ${OVPN_SERVER_NET:="10.68.76.0/24"}
-
 # Server name is in the form "udp://vpn.example.com:1194"
 if [[ "${OVPN_SERVER_URI:-}" =~ ^((udp|tcp|udp6|tcp6)://)?([0-9a-zA-Z\.\-]+)(:([0-9]+))?$ ]]; then
     OVPN_PROTO=${BASH_REMATCH[2]};
@@ -37,13 +35,15 @@ else
     : ${OVPN_CN:="localhost"}
 fi
 
+: ${OVPN_SERVER_NET:="10.68.76.0/24"}
+
 : ${OVPN_DEVICE:="tun"}
 : ${OVPN_DEVICE_NUM:=0}
 
 : ${OVPN_KEEPALIVE:="10 60"}
 
 # REF: https://community.openvpn.net/openvpn/wiki/CipherNegotiation
-: ${OVPN_DATA_CIPHERS:="CHACHA20-POLY1305:AES-256-GCM:AES-128-GCM:AES-256-CBC:BF-CBC"}
+: ${OVPN_DATA_CIPHERS:="CHACHA20-POLY1305:AES-256-GCM:AES-128-GCM:AES-256-CBC"}
 : ${OVPN_DATA_CIPHERS_FALLBACK:="AES-256-CBC"}
 
 : ${OVPN_NAT:=1}
@@ -61,6 +61,12 @@ fi
 
 : ${OVPN_TOPOLOGY:=subnet}
 : ${OVPN_DUPLICATE_CN:=0}
+
+# docker内部openvpn运行端口
+: ${OVPN_INTERNAL_PORT:=1194}
+
+# server key filename base
+: ${OVPN_SERVER_KEY_FNBASE:="$OVPN_CN"}
 
 # ==================
 # 导出

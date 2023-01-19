@@ -26,9 +26,9 @@ fi
 
 # ===============
 # check PKI
-_PKI_PRIVATE_KEY="${EASYRSA_PKI}/private/${OVPN_CN}.key"
+_PKI_PRIVATE_KEY="${EASYRSA_PKI}/private/${OVPN_SERVER_KEY_FNBASE}.key"
 if [[ ! -f "$_PKI_PRIVATE_KEY" ]]; then
-    print_info "PKI: $_PKI_PRIVATE_KEY 不存在"
+    print_info "PKI Server Key: $_PKI_PRIVATE_KEY 不存在"
     print_info "使用pki-init创建后重启该容器"
     exec tail -F /dev/null
 fi

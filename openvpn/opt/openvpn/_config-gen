@@ -44,22 +44,22 @@ process_extra_config() {
 cat <<EOF
 verb ${OVPN_VERB}
 
-server $(getroute $OVPN_SERVER_NET)
-proto $OVPN_PROTO
-# Rely on Docker to do port mapping, internally always 1194
-port 1194
+proto ${OVPN_PROTO}
+port ${OVPN_INTERNAL_PORT}
 
 dev ${OVPN_DEVICE}${OVPN_DEVICE_NUM}
+
+server $(getroute $OVPN_SERVER_NET)
 topology ${OVPN_TOPOLOGY}
 
-key $EASYRSA_PKI/private/${OVPN_CN}.key
-ca $EASYRSA_PKI/ca.crt
-cert $EASYRSA_PKI/issued/${OVPN_CN}.crt
-dh $EASYRSA_PKI/dh.pem
-tls-auth $EASYRSA_PKI/ta.key
+key ${EASYRSA_PKI}/private/${OVPN_SERVER_KEY_FNBASE}.key
+ca ${EASYRSA_PKI}/ca.crt
+cert ${EASYRSA_PKI}/issued/${OVPN_SERVER_KEY_FNBASE}.crt
+dh ${EASYRSA_PKI}/dh.pem
+tls-auth ${EASYRSA_PKI}/ta.key
 
 key-direction 0
-keepalive $OVPN_KEEPALIVE
+keepalive ${OVPN_KEEPALIVE}
 persist-key
 persist-tun
 

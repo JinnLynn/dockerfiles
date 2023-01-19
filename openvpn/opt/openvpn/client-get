@@ -50,10 +50,12 @@ fi
 gen_client_config() {
     cat <<EOF
 client
-nobind
-dev ${OVPN_DEVICE}
-remote-cert-tls server
 $(_config_remote)
+
+dev ${OVPN_DEVICE}
+
+nobind
+remote-cert-tls server
 
 EOF
 

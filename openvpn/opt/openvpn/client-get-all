@@ -4,7 +4,7 @@ source $(cd $(dirname $0); pwd)/_common.sh
 for name in $EASYRSA_PKI/issued/*.crt; do
     name=$(basename "$name")
     name=${name%.crt}
-    if [ "$name" != "$OVPN_CN" ]; then
+    if [ "$name" != "$OVPN_SERVER_KEY_FNBASE" ]; then
         $SCRIPT_DIR/client-get "$name" separated
         $SCRIPT_DIR/client-get "$name" combined-save
     fi
