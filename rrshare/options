@@ -1,5 +1,0 @@
-
-# 构建文件 Dockerfile 或 bakefile
-OPT_BUILD_FILE="Dockerfile.amd64"
-# 构建目标平台
-OPT_BUILD_PLATFORM="linux/amd64"
