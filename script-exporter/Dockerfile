@@ -2,7 +2,7 @@ FROM jinnlynn/alpine:gnu
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
-ARG VERSION="2.5.1"
+ARG VERSION="2.7.0"
 
 RUN set -ex && \
     wget -O /app/bin/script_exporter https://github.com/ricoberger/script_exporter/releases/download/v${VERSION}/script_exporter-linux-$(xinfo) && \
