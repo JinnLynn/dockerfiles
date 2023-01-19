@@ -2,9 +2,12 @@
 
 : ${SSH_PASSWORD:=$(cat '/proc/sys/kernel/random/uuid' | awk -F '-' '{print $5}')}
 : ${SSH_PASSWORD_AUTH:=0}
-: ${SSH_INTERACTIVE:=1}
+: ${SSH_INTERACTIVE:=0}
 : ${SSH_FORWARDING:=0}
 : ${SSH_SFTP:=0}
+
+: ${SSH_PUBLIC_KEY:=}
+: ${SSH_EXTRA_PKG:=}
 
 # ===
 # NOTE: 不要使用Banner配置
@@ -18,6 +21,7 @@ multi_config() {
         awk '/^'$1'[0-9_]*=/ {sub (/^[^=]*=/, "", $0); print}' | \
         sed "s/^['\"]//; s/['\"]$//g"
 }
+
 # ===
 
 (
@@ -31,11 +35,25 @@ OpenSSH_${ssh_ver} OpenSSL_${ssl_ver}
 EOF
 )
 
+# 安装包
+if [ -n "$SSH_EXTRA_PKG" ]; then
+    echo "$SSH_EXTRA_PKG" | xargs -n1 echo | while read -r pkg; do
+        apk info -e "$pkg" &>/dev/null || {
+            echo "[INFO] Install PKG: $pkg"
+            apk add --no-cache --quiet $pkg
+        }
+    done
+fi
+
 # PUB KEYS
 rm -rf ~/.ssh
 mkdir -p ~/.ssh
 chmod 700 ~/.ssh
-cat /app/etc/keys/*.pub >~/.ssh/authorized_keys 2>/dev/null
+(
+    [ -n "$SSH_PUBLIC_KEY" ] && \
+        cat $SSH_PUBLIC_KEY || \
+        cat /app/etc/keys/*.pub
+) >~/.ssh/authorized_keys 2>/dev/null
 chmod 600 ~/.ssh/authorized_keys 2>/dev/null
 
 # 更改密码
@@ -93,7 +111,8 @@ PASSWORD_AUTH:  $SSH_PASSWORD_AUTH
 INTERACTIVE:    $SSH_INTERACTIVE
 FORWARDING:     $SSH_FORWARDING
 SFTP:           $SSH_SFTP
-EXTRA:
+EXTRA PKG:      $SSH_EXTRA_PKG
+EXTRA CONFIG:
 EOF
 
 multi_config SSH_EXTRA_CONFIG | while read -r var; do
