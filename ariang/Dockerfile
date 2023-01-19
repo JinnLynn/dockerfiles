@@ -2,10 +2,9 @@ FROM jinnlynn/httpd
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
-ARG VERSION="1.2.4"
+ARG VERSION="1.3.2"
 
 RUN set -ex && \
-    DLINK="https://github.com/mayswind/AriaNg/releases/download/${VERSION}/AriaNg-${VERSION}.zip" && \
-    wget -O /tmp/ariang.zip "$DLINK" && \
+    wget -O /tmp/ariang.zip "https://github.com/mayswind/AriaNg/releases/download/${VERSION}/AriaNg-${VERSION}.zip" && \
     unzip -o -d /app/var/www /tmp/ariang.zip && \
     rm -rf /tmp/*
