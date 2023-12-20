@@ -1,53 +1,69 @@
-// =====
-// ../build 命令会自动设置的变量
-// 其它一般情况下不需要改变设置
-// 但为了避免直接使用`docker buildx bake`使用该文件时出现异常，BUILD_NAM能有可用的默认值
-variable "BUILD_NAME" { default = "alpine" }
-variable "BUILD_USER" { default = "" }
-variable "BUILD_IMAGE" {
-    default = trimspace(BUILD_USER) != "" ? "${BUILD_USER}/${BUILD_NAME}" : "${BUILD_NAME}"
-}
 
-// =====
-variable "LATEST_VERSION" { default = "3.16" }
+variable "VERSION" { default = "3.19" }
 
 // NOTE: SEE target gnu
 group "default" {
-    targets = ["latest", "edge"]
+    targets = ["latest", "edge", "3_18", "3_17", "gnu"]
 }
 
 target "latest" {
-    tags = [
-        "${BUILD_IMAGE}",
-        "${BUILD_IMAGE}:${LATEST_VERSION}"
-    ]
-    args = {
-        VERSION = "${LATEST_VERSION}"
-    }
+    inherits = ["3_19", "base"]
 }
 
 target "edge" {
-    tags = [
-        "${BUILD_IMAGE}:edge"
-    ]
+    inherits = ["base"]
+    tags = genTags("edge")
     args = {
         VERSION = "edge"
     }
 }
 
-// NOTE: gun 依赖 latest 需push latest后再构建
 target "gnu" {
+    inherits = ["base"]
     context = "gnu"
-    tags = [
-        "${BUILD_IMAGE}:gnu"
-    ]
+    tags = genTags("gnu")
+    args = {
+        VERSION = "${VERSION}"
+    }
 }
 
 // ===
+target "3_19" {
+    inherits = ["base"]
+    tags = genTags("3.19")
+    args = {
+        VERSION = "3.19"
+    }
+}
+
+target "3_18" {
+    inherits = ["base"]
+    tags = genTags("3.18")
+    args = {
+        VERSION = "3.18"
+    }
+}
+
+target "3_17" {
+    inherits = ["base"]
+    tags = genTags("3.17")
+    args = {
+        VERSION = "3.17"
+    }
+}
+
+target "3_16" {
+    inherits = ["base"]
+    tags = genTags("3.16")
+    args = {
+        VERSION = "3.16"
+    }
+}
+
+// python2 3.15后被删除
 target "3_15" {
-    tags = [
-        "${BUILD_IMAGE}:3.15"
-    ]
+    inherits = ["base"]
+    tags = genTags("3.15")
     dockerfile = "Dockerfile.3.15"
     args = {
         VERSION = "3.15"
