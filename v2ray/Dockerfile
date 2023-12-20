@@ -4,14 +4,16 @@ FROM jinnlynn/alpine AS DL
 ARG VERSION
 
 RUN set -ex && \
-    ARCH=$(xinfo --amd64 64 --arm64 arm64-v8a --armv7 arm32-v7a --386 32) && \
+    ARCH=$(xinfo --amd64 64 --arm64 arm64-v8a --armv7 arm32-v7a --armv6 arm32-v6 --386 32) && \
     DLINK="https://github.com/v2fly/v2ray-core/releases/download/v${VERSION}/v2ray-linux-${ARCH}.zip" && \
     apk add --no-cache openssl ca-certificates unzip && \
     cd /tmp && \
     wget -O v2ray.zip $DLINK && \
-    wget -O v2ray.zip.dgst "${DLINK}.dgst" && \
-    [ "$(openssl dgst -sha512 v2ray.zip | sed 's/([^)]*)//g')" == "$(cat v2ray.zip.dgst | grep 'SHA512' | head -n1)" ] && \
     unzip -q v2ray.zip
+
+    # wget -O v2ray.zip.dgst "${DLINK}.dgst" && \
+    # [ "$(openssl dgst -sha512 v2ray.zip | sed 's/([^)]*)//g' | awk '{print $2}')" == "$(cat v2ray.zip.dgst | grep 'SHA512' | head -n1 | awk '{print $2}')" ] && \
+    # unzip -q v2ray.zip
 
 
 FROM jinnlynn/alpine

@@ -1,33 +1,25 @@
-variable "BUILD_NAME" { default = "ubuntu" }
-variable "BUILD_USER" { default = "" }
-variable "BUILD_IMAGE" {
-    default = trimspace(BUILD_USER) != "" ? "${BUILD_USER}/${BUILD_NAME}" : "${BUILD_NAME}"
-}
-// =====
+variable "VERSION" { default = "22.04" }
 
-variable "LATEST_VERSION" {
-    default = "22.04"
+# ubuntu 官方镜像没有 linux/arm/v6 架构
+variable "PLATFORM" {
+    default = "linux/amd64,linux/arm64,linux/arm/v7"
 }
 
 group "default" {
-    targets = ["latest"]
+    targets = ["latest", "20_04"]
 }
 
 target "latest" {
-    tags = [
-        "${BUILD_IMAGE}",
-        "${BUILD_IMAGE}:${LATEST_VERSION}"
-    ]
+    inherits = ["base"]
     args = {
-        VERSION = "${LATEST_VERSION}"
+        VERSION = "${VERSION}"
     }
 }
 // =====
 
 target "20_04" {
-    tags = [
-        "${BUILD_IMAGE}:20.04"
-    ]
+    inherits = ["base"]
+    tags = genTags("20.04")
     args = {
         VERSION = "20.04"
     }

@@ -7,10 +7,8 @@ ARG VERSION="1.55.1"
 RUN set -ex && \
     apk --no-cache add ca-certificates fuse tzdata && \
     echo "user_allow_other" >> /etc/fuse.conf && \
-    ARCH=$(arch) && \
-    [ $(arch -r) == "armv7" ] && ARCH="arm-v7" || true && \
-    DLINK="https://github.com/rclone/rclone/releases/download/v1.55.0/rclone-v${VERSION}-linux-${ARCH}.zip" && \
-    wget -O /tmp/rclone.zip "$DLINK" && \
+    ARCH=$(xinfo --armv7 arm-v7 --armv6 arm) && \
+    wget -O /tmp/rclone.zip "https://github.com/rclone/rclone/releases/download/v${VERSION}/rclone-v${VERSION}-linux-${ARCH}.zip" && \
     unzip -o -d /tmp /tmp/rclone.zip && \
     mv /tmp/rclone-*/rclone /app/bin/ && \
     rm -rf /tmp/*

@@ -1,20 +1,13 @@
-// =====
-variable "BUILD_NAME" { default = "openvpn" }
-variable "BUILD_USER" { default = "" }
-variable "BUILD_IMAGE" {
-    default = trimspace(BUILD_USER) != "" ? "${BUILD_USER}/${BUILD_NAME}" : "${BUILD_NAME}"
-}
-// =====
-
-variable "CURRENT_OPENVPN_VERSION" { default="2.5" }
-
-group "default" {
-    targets = ["latest"]
-}
-
-target "latest" {
+// 从Alpine软件库直接安装，因此两者版本需匹配
+// Alpine       OpenVPN
+// 3.17     =>  2.5
+target "default" {
+    inherits = ["base"]
 	tags = [
-        "${BUILD_IMAGE}",
-        "${BUILD_IMAGE}:${CURRENT_OPENVPN_VERSION}"
+        "${latestTag()}",
+        "${genTag("2.5")}"
     ]
+    args = {
+        ALPINE_VERSION = "3.17"
+    }
 }

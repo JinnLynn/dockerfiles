@@ -3,8 +3,8 @@ FROM ubuntu${VERSION:+":$VERSION"}
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
-ARG MIRROR="https://mirrors.aliyun.com/ubuntu/"
-ARG MIRROR_PORTS="https://mirrors.aliyun.com/ubuntu-ports/"
+ARG MIRROR="https://mirrors.tuna.tsinghua.edu.cn/ubuntu/"
+ARG MIRROR_PORTS="https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/"
 ARG TIMEZONE="Asia/Shanghai"
 ARG APP_DIRS
 

@@ -1,29 +1,52 @@
-// =====
-variable "BUILD_NAME" { default = "python" }
-variable "BUILD_USER" { default = "" }
-variable "BUILD_IMAGE" {
-    default = trimspace(BUILD_USER) != "" ? "${BUILD_USER}/${BUILD_NAME}" : "${BUILD_NAME}"
-}
-// =====
 
-variable "LATEST_PYTHON_VERSION" { default="3.10" }
+// 从Alpine软件库直接安装，因此两者版本需匹配
+// Alpine       Python
+// 3.13     =>  3.8
+// 3.17     =>  3.10
+// 3.19     =>  3.11
+// edge     =>  3.11
+
+// 当前
+// latest => 3.11
 
 group "default" {
-    targets = ["latest"]
+    targets = ["latest", "3_10"]
 }
 
 target "latest" {
-	tags = [
-        "${BUILD_IMAGE}",
-        "${BUILD_IMAGE}:3",
-        "${BUILD_IMAGE}:${LATEST_PYTHON_VERSION}"
-    ]
+    inherits = ["3_11"]
+	tags = genLatestTags("3", "3.11")
+}
+
+// ===
+target "3_11" {
+    inherits = ["base"]
+    tags = genTags("3.11")
+    args = {
+        ALPINE_VERSION = "3.19"
+        MIRROR = "https://pypi.tuna.tsinghua.edu.cn/simple"
+    }
+}
+
+target "3_10" {
+    inherits = ["base"]
+    tags = genTags("3.10")
+    args = {
+        ALPINE_VERSION = "3.17"
+        MIRROR = "https://pypi.tuna.tsinghua.edu.cn/simple"
+    }
+}
+
+target "3_8" {
+    inherits = ["base"]
+    tags = genTags("3.8")
+    args = {
+        ALPINE_VERSION = "3.13"
+    }
 }
 
 // ===
 target "2" {
     dockerfile = "Dockerfile.2"
-    tags = [
-        "${BUILD_IMAGE}:2"
-    ]
+    tags = genTags("2")
 }
