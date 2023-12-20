@@ -11,6 +11,7 @@
 
 # ==============================================================================
 # buildx init
+SCRIPT_DIR=$(dirname $0)
 
 abspath() {
     # macOS下没有 realpath
@@ -263,8 +264,9 @@ build_bake() {
         export BUILD_NAME=${build_dir%%\/*}
 
         cd $build_dir # 跳出 () 后会自动退出
+        export BUILD_PLATFORM=$(get_build_platform)
 
-        cmd="docker buildx bake $(get_build_option) -f $bakefile --set *.platform=$(get_build_platform)"
+        cmd="docker buildx bake $(get_build_option) -f $SCRIPT_DIR/basic.hcl -f $bakefile"
         # echo
         if is_true $CMD_DRY_RUN; then
             for e in ${!BUILD_*}; do eval echo "$e: \$$e"; done
@@ -411,7 +413,7 @@ build_single() {
     #     log_error "$single Dockerfile missing"
     #     return 1
     # }
-    echo ${files[@]}
+    # echo ${files[@]}
     for f in ${files[@]}; do
         build "$f"
     done
