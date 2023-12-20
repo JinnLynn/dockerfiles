@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-: ${AEIA2_CONFIG:="/app/etc/aria2.conf"}
+: ${ARIA2_CONFIG:="/app/etc/aria2.conf"}
 
 if [ -z "$@" ]; then
     set -- aria2c ${ARIA2_CONFIG:+"--conf-path=$ARIA2_CONFIG"} \
