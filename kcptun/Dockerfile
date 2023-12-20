@@ -2,7 +2,7 @@ FROM jinnlynn/alpine
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
-ARG VERSION="20210922"
+ARG VERSION="20231012"
 
 RUN set -ex && \
     ARCH=$(xinfo --armv7 arm7 --armv6 arm6 --armv5 arm5) && \
