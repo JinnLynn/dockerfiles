@@ -6,3 +6,6 @@
 
 pip最后支持python2的版本时20.3.4
 REF: https://pip.pypa.io/en/latest/development/release-process/#python-2-support
+
+<!--  -->
+REF: https://veronneau.org/python-311-pip-and-breaking-system-packages.html
