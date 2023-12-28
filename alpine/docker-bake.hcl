@@ -3,21 +3,14 @@ variable "VERSION" { default = "3.19" }
 
 // NOTE: SEE target gnu
 group "default" {
-    targets = ["latest", "edge", "3_18", "3_17", "gnu"]
+    targets = ["latest", "edge", "3_18"]
 }
 
 target "latest" {
     inherits = ["3_19", "base"]
 }
 
-target "edge" {
-    inherits = ["base"]
-    tags = genTags("edge")
-    args = {
-        VERSION = "edge"
-    }
-}
-
+// NOTE: gun 依赖 latest 需push latest后再构建
 target "gnu" {
     inherits = ["base"]
     context = "gnu"
@@ -44,28 +37,10 @@ target "3_18" {
     }
 }
 
-target "3_17" {
+target "edge" {
     inherits = ["base"]
-    tags = genTags("3.17")
+    tags = genTags("edge")
     args = {
-        VERSION = "3.17"
-    }
-}
-
-target "3_16" {
-    inherits = ["base"]
-    tags = genTags("3.16")
-    args = {
-        VERSION = "3.16"
-    }
-}
-
-// python2 3.15后被删除
-target "3_15" {
-    inherits = ["base"]
-    tags = genTags("3.15")
-    dockerfile = "Dockerfile.3.15"
-    args = {
-        VERSION = "3.15"
+        VERSION = "edge"
     }
 }

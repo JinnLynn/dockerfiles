@@ -18,7 +18,7 @@ RUN set -ex && \
         sed -ri "s#^.*/alpine#${MIRROR%/}#g" /etc/apk/repositories && \
         ! grep -q "/edge/" /etc/apk/repositories || echo "${MIRROR%/}/edge/testing" >>/etc/apk/repositories; \
     } && \
-    apk add --no-cache -u ca-certificates tzdata && \
+    apk add --no-cache tzdata && \
     cp "/usr/share/zoneinfo/$TIMEZONE" /etc/localtime && \
     apk del --quiet tzdata && \
     printf '%s\n' ${APP_DIRS:-bin etc opt mnt local log run tmp var} | xargs -ri mkdir -p /app/{} && \
