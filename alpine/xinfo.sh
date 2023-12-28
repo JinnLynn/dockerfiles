@@ -153,8 +153,13 @@ esac
 # =====
 
 _help_extesions() {
+    local title_printed
     find ${SCRIPT_DIR} -name "${SCRIPT_BASENAME}-*" | while read line; do
         if [ -x "$line" ]; then
+            if [ -z "$title_printed" ]; then
+                title_printed=1
+                echo -e "\nExtensions:"
+            fi
             bn="$(basename $line | awk -F. '{print $1}')"
             bn="${bn/${SCRIPT_BASENAME}-/}"
             printf "    %-15s %s\n" "$bn" "$($SCRIPT_EXEC $bn --xinfo-help 2>/dev/null)"
@@ -180,10 +185,7 @@ Commands:
 Arguments:
     --ARCH[variant]
                     eg. --arm7 --arm64
-
-Extensions:
 $(_help_extesions)
-
 EOF
     exit 0
 }
