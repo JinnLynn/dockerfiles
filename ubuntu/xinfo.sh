@@ -3,9 +3,14 @@
 # REF: https://github.com/tonistiigi/xx/blob/master/base/xx-info
 # AUTHOR: JinnLynn <eatfishlin@gmail.com>
 
+VERSION="2023.12.25"
+
+# ===
 set -e
 
-VERSION="2022.03.16"
+SCRIPT_EXEC="$0"
+SCRIPT_DIR="$(cd $(dirname $0); pwd)"
+SCRIPT_BASENAME="$(basename $0 | awk -F. '{print $1}')"
 
 : "${TARGETPLATFORM=}"
 : "${TARGETOS=}"
@@ -147,9 +152,24 @@ esac
 
 # =====
 
+_help_extesions() {
+    local title_printed
+    find ${SCRIPT_DIR} -name "${SCRIPT_BASENAME}-*" | while read line; do
+        if [ -x "$line" ]; then
+            if [ -z "$title_printed" ]; then
+                title_printed=1
+                echo -e "\nExtensions:"
+            fi
+            bn="$(basename $line | awk -F. '{print $1}')"
+            bn="${bn/${SCRIPT_BASENAME}-/}"
+            printf "    %-15s %s\n" "$bn" "$($SCRIPT_EXEC $bn --xinfo-help 2>/dev/null)"
+        fi
+    done
+}
+
 help() {
     cat >&2 <<EOF
-Usage: $(basename "$0") [COMMAND]
+Usage: $(basename "$SCRIPT_EXEC") [COMMAND]
 
 Commands:
     arch            Print target architecture for Docker
@@ -165,7 +185,7 @@ Commands:
 Arguments:
     --ARCH[variant]
                     eg. --arm7 --arm64
-
+$(_help_extesions)
 EOF
     exit 0
 }
@@ -193,6 +213,79 @@ check() {
     fi
     exit 0
 }
+
+# ===
+
+# _semver_extract VERSION PART [DEFAUT]
+# _semver_extract 1.1.2 major => 1
+# _semver_extract 1.1 patch 2 => 2
+_semver_extract() {
+    _semver_part_check() {
+        if echo "$1" | grep -Eq '^[0-9]+$'; then
+            echo $1
+        else
+            echo $2
+        fi
+    }
+    echo "$1" | while IFS=. read major minor patch; do
+        case "$2" in
+            "major")
+                echo $(_semver_part_check $major ${3:-0})
+                ;;
+            "minor")
+                echo $(_semver_part_check $minor ${3:-0})
+                ;;
+            "patch")
+                echo $(_semver_part_check $patch ${3:-0})
+                ;;
+        esac
+    done
+}
+
+# 版本号比较
+# 0: $1 = $2
+# 4[G]: $1 > $2
+# 5[L]: $1 < $2
+_util_version_compare() {
+    if [ "$1" == "$2" ]; then
+        return 0
+    fi
+    for p in major minor patch; do
+        if [ "$(_semver_extract "$1" $p)" -gt $(_semver_extract "$2" $p) ]; then
+            return 4
+        fi
+        if [ "$(_semver_extract "$1" $p)" -lt $(_semver_extract "$2" $p) ]; then
+            return 5
+        fi
+    done
+    return 0
+}
+
+# 版本号检查
+# $1 被比较的 如系统安装的软件
+# 如
+# 1.2.3 1       => 0
+# 1.2.3 1.2     => 0
+# 1.2.3 2       => 1
+# 1.2   1.2.3   => 1
+_util_version_check() {
+    if [ -z "$1" ] || [ -z "$2" ]; then
+        return 1
+    fi
+    if [ "$1" == "$2" ]; then
+        return 0
+    fi
+    for p in major minor patch; do
+        ver1_part=$(_semver_extract "$1" $p)
+        ver2_part=$(_semver_extract "$2" $p $ver1_part)
+
+        if [ "$ver1_part" != "$ver2_part" ]; then
+            return 1
+        fi
+    done
+    return 0
+}
+# ===
 
 sub_cmd=
 # ubuntu下sh指向dash dash不支持${1:0:1}表达式
@@ -248,7 +341,22 @@ case "$sub_cmd" in
     "help")
         help
         ;;
+    "version-compare")
+        if [ "$1" = "--strict" ]; then
+            shift 1
+            _util_version_compare "$@"
+        else
+            _util_version_check "$@"
+        fi
+        ;;
     *)
+        for s in "" ".sh"; do
+            exec_f="${SCRIPT_DIR}/xinfo-${sub_cmd}${s}"
+            if [ -x "$exec_f" ]; then
+                export XINFO_EXEC=${SCRIPT_EXEC}
+                exec "${exec_f}" "$@"
+            fi
+        done
         help >/dev/stderr
         exit 0
         ;;
