@@ -4,7 +4,7 @@
 : ${DDNS_DOMAIN:=}
 
 # : ${DDNS_IP_SERVICE:="http://ip.3322.net"}
-: ${DDNS_IP_SERVICE:="https://4.ipw.cn"}
+: ${DDNS_IP_SERVICE:="4.ipw.cn"}
 
 : ${DDNS_TYPE_IPV4:=1}
 : ${DDNS_IPV4:=}
@@ -13,11 +13,17 @@
 : ${DDNS_TYPE_IPV6:=0}
 : ${DDNS_IPV6:=}
 # : ${DDNS_IPV6_SERVICE:="https://ipv6.icanhazip.com"}
-: ${DDNS_IPV6_SERVICE:="https://6.ipw.cn"}
+: ${DDNS_IPV6_SERVICE:="6.ipw.cn"}
 
 : ${DDNS_CHECK_INTERVAL:=60}
 : ${DDNS_HOOK:=}
 : ${DDNS_PSL:="/app/var/psl.dat"}
+
+: ${DDNS_DEBUG:=}
+
+if [ -n "$DDNS_DEBUG" ]; then
+    set -x
+fi
 
 CONNECT_TIMEOUT=5
 SILENT=
