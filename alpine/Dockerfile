@@ -24,6 +24,8 @@ RUN set -ex && \
     printf '%s\n' ${APP_DIRS:-bin etc opt mnt local log run tmp var} | xargs -ri mkdir -p /app/{} && \
     xinfo check arm v6 && touch /.armv6 || true
 
+WORKDIR /app
+
 ONBUILD ARG APK_MIRROR=
 ONBUILD RUN set -ex && \
         [ -z "$APK_MIRROR" ] || sed -ri "s#^.*/alpine#${APK_MIRROR%/}#g" /etc/apk/repositories
