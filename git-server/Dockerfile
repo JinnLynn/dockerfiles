@@ -1,4 +1,4 @@
-FROM jinnlynn/git
+FROM jinnlynn/alpine:gnu
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
@@ -6,8 +6,7 @@ ENV GIT_USER=git GIT_USER_ID=1000 \
     GIT_GROUP=git GIT_GROUP_ID=1000
 
 RUN set -ex && \
-    apk add --no-cache openssh util-linux && \
-    rm -rf /etc/ssh/ssh_host_*_key /etc/motd
+    apk add --no-cache git openssh util-linux
 
 COPY entrypoint.sh /app/bin/entrypoint
 COPY git-shell-commands /app/etc/git-shell-commands

@@ -1,13 +1,19 @@
-#!/bin/sh
+#!/bin/bash
 
 if [ -n "$@" ]; then
-    exec $@
+    exec "$@"
 fi
 
-GIT_USER=${GIT_USER:-git}
-GIT_USER_ID=${GIT_USER_ID:-1000}
-GIT_GROUP=${GIT_GROUP:-git}
-GIT_GROUP_ID=${GIT_GROUP_ID:-1000}
+: ${GIT_USER:=git}
+: ${GIT_USER_ID:=1000}
+: ${GIT_GROUP:=git}
+: ${GIT_GROUP_ID:=1000}
+
+# 是否允许密码登录
+: ${GIT_PWD_AUTH:=}
+# 授权证书 在/app/etc/authorized-keys下查找
+# 如果为空 则为该目录下所有*.pub文件
+: ${GIT_AUTHORIZED_KEYS:=}
 
 # Check if user exists
 if ! id -u ${GIT_USER} > /dev/null 2>&1; then
@@ -23,31 +29,60 @@ if ! id -u ${GIT_USER} > /dev/null 2>&1; then
 fi
 
 # check host key
-for k in rsa dsa ecdsa ed25519; do
-    f="/etc/ssh/ssh_host_${k}_key"
-    if [ ! -f "$f" ]; then
-        echo "${k} host key missing, generating..."
-        ssh-keygen -f $f -t $k -N ''
-    fi
-done
-
-# 禁止密码登陆
-sed -i "s/#PasswordAuthentication.*/PasswordAuthentication\ no/" /etc/ssh/sshd_config
-
-cd /home/${GIT_USER}
-
-ln -sf /app/etc/git-shell-commands/ .
-
-# ssh pubkey
-rm -rf .ssh/*
-if [ -n "$(ls /app/etc/*.pub 2>/dev/null)" ]; then
-    cat /app/etc/*.pub >.ssh/authorized_keys 2>/dev/null
-    chown ${GIT_USER}:${GIT_GROUP} .ssh/authorized_keys 2>/dev/null
-    chmod 600 .ssh/authorized_keys 2>/dev/null
+_HOST_KEYS="/app/etc/host-keys"
+[ ! -d "$_HOST_KEYS" ] && mkdir -p "$_HOST_KEYS"
+if [ -w "$_HOST_KEYS" ]; then
+    for k in rsa dsa ecdsa ed25519; do
+        f="${_HOST_KEYS}/ssh_host_${k}_key"
+        if [ ! -f "$f" ]; then
+            echo "${k} host key missing, generating..."
+            ssh-keygen -f $f -t $k -N ''
+        fi
+    done
 fi
+find $_HOST_KEYS -name "ssh_host_*_key" -print0 | xargs -0 -I {} ln -sf {} /etc/ssh/
+
+#
+pushd /home/${GIT_USER} >/dev/null
+
+# authorized keys
+_AUTHORIZED_KEYS="/app/etc/authorized-keys"
+[ ! -d "$_AUTHORIZED_KEYS" ] && mkdir -p "$_AUTHORIZED_KEYS"
+rm -rf .ssh/*
+touch .ssh/authorized_keys
+if [ -n "$GIT_AUTHORIZED_KEYS" ]; then
+    for k in $GIT_AUTHORIZED_KEYS; do
+        _kf=${_AUTHORIZED_KEYS}/${k}
+        if [ -f "$_kf" ]; then
+            cat "$_kf" >>.ssh/authorized_keys
+            echo "Authorized Key $k added."
+        else
+            echo "Authorized Key $k missing."
+        fi
+    done
+else
+    [ -n "$(ls $_AUTHORIZED_KEYS/*.pub 2>/dev/null)" ] && \
+        cat $_AUTHORIZED_KEYS/*.pub >.ssh/authorized_keys
+fi
+chown ${GIT_USER}:${GIT_GROUP} .ssh/authorized_keys
+chmod 600 .ssh/authorized_keys
+
+ln -sf /app/etc/git-shell-commands .
+
+popd >/dev/null
 
 # repo
 chown -R ${GIT_USER}:${GIT_GROUP} /app/local
 ln -sf /app/local /repo
 
-exec /usr/sbin/sshd -D
+rm -rf /etc/motd
+
+# 禁止密码登陆
+# sed -i "s/#PasswordAuthentication.*/PasswordAuthentication\ no/" /etc/ssh/sshd_config
+if [ -n "$GIT_PWD_AUTH" ]; then
+    set -- -o "PasswordAuthentication=yes"
+else
+    set -- -o "PasswordAuthentication=no"
+fi
+
+exec /usr/sbin/sshd -D "$@"
