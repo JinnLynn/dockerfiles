@@ -9,12 +9,11 @@ RUN set -ex && \
     apk add --no-cache openssl ca-certificates unzip && \
     cd /tmp && \
     wget -O v2ray.zip $DLINK && \
+    wget -O v2ray.zip.dgst "${DLINK}.dgst" && \
+    [ "$(openssl dgst -sha512 v2ray.zip | sed 's/([^)]*)//g' | awk '{print $2}')" == "$(cat v2ray.zip.dgst | grep 'SHA2-512' | head -n1 | awk '{print $2}')" ] && \
     unzip -q v2ray.zip
 
-    # wget -O v2ray.zip.dgst "${DLINK}.dgst" && \
-    # [ "$(openssl dgst -sha512 v2ray.zip | sed 's/([^)]*)//g' | awk '{print $2}')" == "$(cat v2ray.zip.dgst | grep 'SHA512' | head -n1 | awk '{print $2}')" ] && \
-    # unzip -q v2ray.zip
-
+# ===
 
 FROM jinnlynn/alpine
 

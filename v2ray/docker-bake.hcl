@@ -1,4 +1,4 @@
-variable "VERSION" { default = "5.7.0" }
+variable "VERSION" { default = "5.15.0" }
 
 target "default" {
     inherits = ["base"]
