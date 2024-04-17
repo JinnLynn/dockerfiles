@@ -30,7 +30,7 @@ target "3_10" {
     inherits = ["_base"]
     tags = genTags("3.10")
     args = {
-        PYTHON_VERSION = "3.11"
+        PYTHON_VERSION = "3.10"
     }
 }
 
