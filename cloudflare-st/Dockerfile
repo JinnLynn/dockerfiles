@@ -1,6 +1,6 @@
 FROM jinnlynn/alpine
 
-ARG VRESION=2.2.4
+ARG VRESION=2.2.5
 
 RUN set -ex && \
     ARCH=$(xinfo) && \
