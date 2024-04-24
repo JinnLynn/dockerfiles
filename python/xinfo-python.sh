@@ -48,6 +48,9 @@ case "$1" in
     --pip-version-check )
         _version_check "$PIP_VERSION" "$2"
         ;;
+    --clean-cache )
+        [ -d "$PYTHONPYCACHEPREFIX" ] && rm -rf ${PYTHONPYCACHEPREFIX}/*
+        ;;
     # ==
     --xinfo-help )
         echo "About Python"
