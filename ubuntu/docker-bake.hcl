@@ -24,3 +24,11 @@ target "20_04" {
         VERSION = "20.04"
     }
 }
+
+target "24_04" {
+    inherits = ["base"]
+    tags = genTags("24.04")
+    args = {
+        VERSION = "24.04"
+    }
+}
