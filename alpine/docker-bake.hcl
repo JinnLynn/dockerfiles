@@ -3,7 +3,7 @@ variable "VERSION" { default = "3.19" }
 
 // NOTE: SEE target gnu
 group "default" {
-    targets = ["latest", "edge", "3_18"]
+    targets = ["latest", "edge", "3_18", "3_17"]
 }
 
 target "latest" {
@@ -34,6 +34,14 @@ target "3_18" {
     tags = genTags("3.18")
     args = {
         VERSION = "3.18"
+    }
+}
+
+target "3_17" {
+    inherits = ["base"]
+    tags = genTags("3.17")
+    args = {
+        VERSION = "3.17"
     }
 }
 
