@@ -1,4 +1,4 @@
-variable "VERSION" { default = "22.04" }
+variable "VERSION" { default = "24.04" }
 
 # ubuntu 官方镜像没有 linux/arm/v6 架构
 variable "PLATFORM" {
@@ -6,7 +6,7 @@ variable "PLATFORM" {
 }
 
 group "default" {
-    targets = ["latest", "20_04"]
+    targets = ["latest", "20_04", "22_04"]
 }
 
 target "latest" {
@@ -25,10 +25,10 @@ target "20_04" {
     }
 }
 
-target "24_04" {
+target "22_04" {
     inherits = ["base"]
-    tags = genTags("24.04")
+    tags = genTags("22.04")
     args = {
-        VERSION = "24.04"
+        VERSION = "22.04"
     }
 }
