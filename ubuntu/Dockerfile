@@ -14,17 +14,13 @@ ARG TARGETPLATFORM
 ENV PATH=/app/bin:$PATH
 ENV LC_ALL=C.UTF-8
 
-COPY cleanup.sh /app/bin/cleanup
 COPY xinfo.sh /app/bin/xinfo
+COPY xinfo-ubuntu.sh /app/bin/
 
 RUN set -ex && \
     DEBIAN_FRONTEND=noninteractive && \
     xinfo check amd64 || MIRROR=${MIRROR_PORTS} && \
-    cp /etc/apt/sources.list /tmp/ && \
-    cat /tmp/sources.list | egrep -v "(^#|-backports|-updates)" | grep "main" | tee /etc/apt/sources.list && \
-    apt-get update && \
-    apt-get install -y ca-certificates && \
-    cat /tmp/sources.list | egrep -v "^(#|$)" | sed -E "s#http:[^\ ]*#${MIRROR%/}/#g" | tee /etc/apt/sources.list && \
+    xinfo ubuntu --apt-sources ${MIRROR} && \
     apt-get update && \
     apt-get upgrade -y && \
     apt-get install -qy tzdata && \
@@ -32,6 +28,6 @@ RUN set -ex && \
     cp /usr/share/zoneinfo/${TIMEZONE:-Asia/Shanghai} /etc/localtime && \
     apt-get remove -qy tzdata && \
     printf '%s\n' ${APP_DIRS:-bin etc opt mnt local log tmp var} | xargs -ri mkdir -p /app/{} && \
-    cleanup
+    xinfo ubuntu --cleanup
 
 CMD ["/bin/bash"]
