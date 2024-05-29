@@ -1,13 +1,13 @@
 
-variable "VERSION" { default = "3.19" }
+variable "VERSION" { default = "3.20" }
 
 // NOTE: SEE target gnu
 group "default" {
-    targets = ["latest", "edge", "3_18", "3_17"]
+    targets = ["latest", "edge", "3_19", "3_18", "3_17"]
 }
 
 target "latest" {
-    inherits = ["3_19", "base"]
+    inherits = ["3_20", "base"]
 }
 
 // NOTE: gun 依赖 latest 需push latest后再构建
@@ -21,6 +21,14 @@ target "gnu" {
 }
 
 // ===
+target "3_20" {
+    inherits = ["base"]
+    tags = genTags("3.20")
+    args = {
+        VERSION = "3.20"
+    }
+}
+
 target "3_19" {
     inherits = ["base"]
     tags = genTags("3.19")

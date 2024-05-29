@@ -4,15 +4,7 @@
 # buildx create --name builder --driver docker-container --driver-opt image=moby/buildkit,network=host --use
 # docker buildx inspect --bootstrap
 
-# 默认构建镜像优先顺序
-: ${DOCKER_BUILD_PRIORITY:="alpine ubuntu ssh python go node php php/fpm flask httpd nginx git"}
-# 默认构架镜像的CUP架构
-: ${DOCKER_BUILD_ARCHS:="amd64 arm64 arm/v7 arm/v6"}
-
 # ==============================================================================
-# buildx init
-SCRIPT_DIR=$(dirname $0)
-
 abspath() {
     # macOS下没有 realpath
     # REF: https://stackoverflow.com/questions/3572030/bash-script-absolute-path-with-os-x/3572105#3572105
@@ -20,6 +12,14 @@ abspath() {
         [[ $1 = /* ]] && echo "$1" || echo "$PWD/${1#./}"
     }
 }
+# ==============================================================================
+
+SCRIPT_DIR=$(abspath $(dirname $0))
+
+# 默认构建镜像优先顺序
+: ${DOCKER_BUILD_PRIORITY:="alpine ubuntu ssh python go node php php/fpm flask httpd nginx git"}
+# 默认构架镜像的CUP架构
+: ${DOCKER_BUILD_ARCHS:="amd64 arm64 arm/v7 arm/v6"}
 
 echo_red() {
     echo -e "\033[31m$@\033[0m"
@@ -70,6 +70,12 @@ log_error() {
 
 is_true() {
     [[ "$1" == "true" || "$1" == "yes" ]] && return 0 || return 1
+}
+
+# is_verbose [LEVEL]
+is_verbose() {
+    local level=${1:-1}
+    [ "$CMD_VERBOSE" -ge $level ]
 }
 
 is_fail() {
@@ -153,7 +159,7 @@ run_cmd() {
     [ -z "$cmd" ] && cmd=$LAST_CMD_RUNNED
     LAST_CMD_RUNNED=$cmd
     is_true $CMD_DRY_RUN && echo "$cmd" && return 0
-    is_true $CMD_VERBOSE && echo_green "RUN CMD: $cmd"
+    is_verbose && echo_green "RUN CMD: $cmd"
     $cmd
 }
 
@@ -206,12 +212,13 @@ build() {
     )
 }
 
-get_build_option() {
+get_common_build_options() {
     local opts="$CMD_BUILD_OPTS"
 
     is_true $CMD_BUILD_FORCE && opts="$opts --no-cache"
     is_true $CMD_PUSH && opts="$opts --push"
     is_true $CMD_LOAD && opts="$opts --load"
+    is_verbose 2 && opts="$opts --progress plain"
 
     echo $opts
 }
@@ -250,7 +257,7 @@ build_bake() {
     local bakefile=$(basename $f)
     local build_dir=$(dirname $f)
 
-    if is_true $CMD_VERBOSE; then
+    if is_verbose; then
         echo_green "filepath:   $f"
         echo_green "build_dir:  $build_dir"
         echo_green "bakefile:   $bakefile"
@@ -266,10 +273,23 @@ build_bake() {
         cd $build_dir # 跳出 () 后会自动退出
         export BUILD_PLATFORM=$(get_build_platform)
 
-        cmd="docker buildx bake $(get_build_option) -f $SCRIPT_DIR/basic.hcl -f $bakefile"
+        build_opts=$(get_common_build_options)
+
+        # build args
+        build_args="$OPT_BUILD_ARGS $CMD_BUILD_ARGS"
+        [[ -n "$build_args" ]] && {
+            for a in $build_args; do
+                build_opts="$build_opts --set=*.args.$a"
+            done
+        }
+
+        cmd="docker buildx bake $build_opts -f $SCRIPT_DIR/basic.hcl -f $bakefile"
         # echo
         if is_true $CMD_DRY_RUN; then
-            for e in ${!BUILD_*}; do eval echo "$e: \$$e"; done
+            for e in ${!BUILD_*}; do
+                echo_green "$(eval printf \"%-16s%s\" \"$e:\" \"\$$e\")"
+            done
+            echo_green_split
             echo
             $cmd --print $CMD_BUILD_TARGET
         fi
@@ -301,7 +321,7 @@ build_dockerfile() {
 
     local tag=$(get_local_tag $image $suite)
 
-    if is_true $CMD_VERBOSE; then
+    if is_verbose; then
         echo_green "filepath:   $f"
         echo_green "build_dir:  $build_dir"
         echo_green "dockerfile: $dockerfile"
@@ -322,8 +342,7 @@ build_dockerfile() {
     fi
     suite=(${new_suite[@]})
 
-
-    local build_opts=$(get_build_option)
+    local build_opts=$(get_common_build_options)
 
     build_args="$OPT_BUILD_ARGS $CMD_BUILD_ARGS"
     [[ -n "$build_args" ]] && {
@@ -461,7 +480,7 @@ LAST_CMD_RUNNED=
 FAILED_RETRY_MAX=${FAILED_RETRY_MAX:-5}
 
 # ==============================================================================
-CMD_VERBOSE=false
+CMD_VERBOSE=0
 CMD_DRY_RUN=false
 CMD_PLATFORM=
 CMD_PUSH=false
@@ -524,10 +543,11 @@ while (( ${#} )); do
             ;;
         --dry-run|-d)
             CMD_DRY_RUN=true
-            CMD_VERBOSE=true
+            is_verbose || CMD_VERBOSE=1
             ;;
-        --verbose|-v )
-            CMD_VERBOSE=true
+        --verbose|-v|-vv )
+            level=$(echo "$1" | grep -o 'v' | wc -l)
+            CMD_VERBOSE=$(($CMD_VERBOSE + $level))
             ;;
         --help|-h )
             usage
@@ -550,7 +570,7 @@ done
 
 ERR_LOG_FILE=$(mktemp)
 
-is_true $CMD_VERBOSE && {
+is_verbose && {
     echo_green "Main Options:"
     echo_green_split
     echo_green "USER:         $USER"
