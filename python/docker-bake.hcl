@@ -1,28 +1,34 @@
-variable "ALPINE_VERSION" { default="3.19" }
+variable "VERSION" { default="3.12" }
+variable "EDGE_VERSION" { default="3.13-rc" }
+variable "ALPINE_VERSION" { default="3.20" }
 
 group "default" {
-    targets = ["latest", "3_11", "3_10"]
+    targets = ["latest", "edge", "3_11", "3_10"]
 }
 
 target "latest" {
-    inherits = ["3_12"]
-	tags = genLatestTags("3", "3.12")
-}
-
-// ===
-target "3_12" {
-    inherits = ["_base"]
-    tags = genTags("3.12")
+    inherits = ["base"]
+    tags = genLatestTags("3", "${VERSION}")
     args = {
-        PYTHON_VERSION = "3.12"
+        VERSION = "${VERSION}"
+        ALPINE_VERSION = "${ALPINE_VERSION}"
     }
 }
 
+target "edge" {
+    inherits = ["_base"]
+    tags = genTags("edge")
+    args = {
+        VERSION = "${EDGE_VERSION}"
+    }
+}
+
+// ===
 target "3_11" {
     inherits = ["_base"]
     tags = genTags("3.11")
     args = {
-        PYTHON_VERSION = "3.11"
+        VERSION = "3.11"
     }
 }
 
@@ -30,7 +36,7 @@ target "3_10" {
     inherits = ["_base"]
     tags = genTags("3.10")
     args = {
-        PYTHON_VERSION = "3.10"
+        VERSION = "3.10"
     }
 }
 

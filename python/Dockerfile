@@ -1,9 +1,9 @@
 ARG ALPINE_VERSION
-ARG PYTHON_VERSION
+ARG VERSION
 
 FROM jinnlynn/alpine${ALPINE_VERSION:+":${ALPINE_VERSION}"} AS alpine
 
-FROM python:${PYTHON_VERSION}-alpine${ALPINE_VERSION}
+FROM python:${VERSION}-alpine${ALPINE_VERSION}
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 
