@@ -7,7 +7,11 @@ on:
         required: false
         type: string
         default: ''
-      extra_build_target:
+      target:
+        required: false
+        type: string
+        default: ''
+      extra_target:
         required: false
         type: string
         default: ''
@@ -16,7 +20,10 @@ on:
         required: true
       DOCKER_TOKEN:
           required: true
-
+defaults:
+  run:
+    shell: bash
+    working-directory: ./
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -31,13 +38,10 @@ jobs:
             username: ${{ secrets.DOCKER_USERNAME }}
             password: ${{ secrets.DOCKER_TOKEN }}
       - uses: actions/checkout@v4
-      - shell: bash
-        run: chmod +x ./build
+      - run: chmod +x ./build
       - name: Build and Push
         if: ${{ inputs.image != '' }}
-        shell: bash
-        run: ./build -v -p ${{ inputs.image }}
+        run: ./build -v -p ${{ inputs.target && format('-t {0}', inputs.target) }} ${{ inputs.image }}
       - name: Build extra
-        if: ${{ inputs.image != '' && inputs.extra_build_target != '' }}
-        shell: bash
-        run: ./build -v -p -t ${{ inputs.extra_build_target }} ${{ inputs.image }}
+        if: ${{ success() && inputs.image && inputs.extra_target }}
+        run: ./build -v -p -t ${{ inputs.extra_target }} ${{ inputs.image }}

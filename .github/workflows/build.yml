@@ -1,11 +1,20 @@
 name: Build and Push Image
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      image:
+        type: string
+        required: false
+      target:
+        type: string
+        required: false
   push:
-    paths:
-      - 'alpine/**'
-      - 'ubuntu/**'
-      - 'python/**'
+    # paths:
+    #   - 'alpine/**'
+    #   - 'ubuntu/**'
+    #   - 'python/**'
+env:
+  base: '["alpine", "ubuntu", "python"]'
 defaults:
   run:
     shell: bash
@@ -16,6 +25,7 @@ jobs:
     permissions:
       pull-requests: read
     outputs:
+      base: ${{ env.base }}
       alpine: ${{ steps.filter.outputs.alpine }}
       ubuntu: ${{ steps.filter.outputs.ubuntu }}
       python: ${{ steps.filter.outputs.python }}
@@ -31,43 +41,33 @@ jobs:
             ubuntu: 'ubuntu/**'
             python: 'python/**'
   alpine:
-    if: ${{ needs.changes.outputs.alpine == 'true' }}
+    if: ${{ needs.changes.outputs.alpine == 'true' || inputs.image == 'alpine' }}
     needs: changes
-    uses: JinnLynn/dockerfiles/.github/workflows/build-single.yml@master
+    uses: ./.github/workflows/build-single.yml
     with:
       image: alpine
-      extra_build_target: gnu
+      target: ${{ inputs.target }}
+      extra_target: ${{ ! inputs.target && 'gnu' }}
     secrets: inherit
-  # alpine:
-  #   needs: changes
-  #   if: ${{ needs.changes.outputs.alpine == 'true' }}
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: JinnLynn/dockerfiles/.github/actions/docker-build-push@master
-  #       with:
-  #         username: ${{ secrets.DOCKER_USERNAME}}
-  #         password: ${{ secrets.DOCKER_TOKEN}}
-  #         image: alpine
-  #     - name: Build alpine:gnu
-  #       run: ./build -v -p -t gnu alpine
-  # ubuntu:
-  #   needs: changes
-  #   if: ${{ needs.changes.outputs.ubuntu == 'true' }}
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: JinnLynn/dockerfiles/.github/actions/docker-build-push@master
-  #       with:
-  #         username: ${{ secrets.DOCKER_USERNAME}}
-  #         password: ${{ secrets.DOCKER_TOKEN}}
-  #         image: ubuntu
-  # python:
-  #   needs: [changes, alpine]
-  #   if: ${{ needs.changes.outputs.python == 'true' }}
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: JinnLynn/dockerfiles/.github/actions/docker-build-push@master
-  #       with:
-  #         username: ${{ secrets.DOCKER_USERNAME}}
-  #         password: ${{ secrets.DOCKER_TOKEN}}
-  #         image: python
-
+  ubuntu:
+    if: ${{ needs.changes.outputs.ubuntu == 'true' || inputs.image == 'ubuntu' }}
+    needs: changes
+    uses: ./.github/workflows/build-single.yml
+    with:
+      image: ubuntu
+    secrets: inherit
+  python:
+    if: ${{ needs.changes.outputs.python == 'true' || inputs.image == 'python' }}
+    needs: [changes, alpine]
+    uses: ./.github/workflows/build-single.yml
+    with:
+      image: python
+    secrets: inherit
+  specified:
+    if: ${{ inputs.image && !contains(fromJSON(needs.changes.outputs.base), inputs.image) }}
+    needs: changes
+    uses: ./.github/workflows/build-single.yml
+    with:
+      image: ${{ inputs.image }}
+      target: ${{ inputs.target }}
+    secrets: inherit
