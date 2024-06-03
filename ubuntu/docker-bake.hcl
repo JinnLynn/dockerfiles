@@ -6,7 +6,7 @@ variable "PLATFORM" {
 }
 
 group "default" {
-    targets = ["latest", "20_04", "22_04"]
+    targets = ["latest", "edge", "20_04", "22_04"]
 }
 
 target "latest" {
@@ -16,6 +16,13 @@ target "latest" {
     }
 }
 // =====
+target "edge" {
+    inherits = ["base"]
+    tags = genTags("edge")
+    args = {
+        VERSION = "rolling"
+    }
+}
 
 target "20_04" {
     inherits = ["base"]
