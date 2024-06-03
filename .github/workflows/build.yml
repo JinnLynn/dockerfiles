@@ -57,7 +57,11 @@ jobs:
       image: ubuntu
     secrets: inherit
   python:
-    if: ${{ needs.changes.outputs.python == 'true' || inputs.image == 'python' }}
+    if:  |
+      ${{
+        always() &&
+        ( needs.changes.outputs.python == 'true' || inputs.image == 'python' )
+      }}
     needs: [changes, alpine]
     uses: ./.github/workflows/build-single.yml
     with:
