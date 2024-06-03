@@ -47,7 +47,6 @@ EOF
     )
 }
 
-# 系统默认Python版本相关信息
 case "$1" in
     --cleanup )
         _cleanup
@@ -59,7 +58,6 @@ case "$1" in
     --xinfo-help )
         echo "About Ubuntu"
         ;;
-    # 默认输出 完整描述：python2|python3
     * )
         (
             . /etc/os-release
