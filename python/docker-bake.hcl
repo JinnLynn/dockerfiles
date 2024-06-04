@@ -1,6 +1,6 @@
 variable "VERSION" { default="3.12" }
 variable "EDGE_VERSION" { default="3.13-rc" }
-variable "ALPINE_VERSION" { default="3.20" }
+variable "ALPINE_VERSION" { default="3.19" } // NOTE: 3.20的还没有armv6 armv7架构 WHY?
 
 group "default" {
     targets = ["latest", "edge", "3_11", "3_10"]
