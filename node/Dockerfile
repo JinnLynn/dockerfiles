@@ -1,9 +1,9 @@
 ARG ALPINE_VERSION
-ARG NODEJS_VERSION
+ARG VERSION
 
 FROM jinnlynn/alpine${ALPINE_VERSION:+":${ALPINE_VERSION}"} AS alpine
 
-FROM node:${NODEJS_VERSION}-alpine${ALPINE_VERSION}
+FROM node:${VERSION}-alpine${ALPINE_VERSION}
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 

@@ -1,22 +1,26 @@
+variable "ALPINE_VERSION" { default = "3.19" }
+variable "VERSION" { default = "20" }
+
 variable "PLATFORM" {
     default = "linux/amd64,linux/arm64"
 }
 
 group "default" {
-    targets = ["latest", "current", "18"]
+    targets = ["latest", "edge", "18"]
 }
 
 target "latest" {
-    inherits = ["20"]
+    inherits = ["${VERSION}"]
 	tags = genLatestTags("20")
 }
 
-target "current" {
+
+target "edge" {
     inherits = ["base"]
-    tags = genTags("current")
+    tags = genTags("edge")
     args = {
-        ALPINE_VERSION = "3.19"
-        NODEJS_VERSION = "current"
+        ALPINE_VERSION = "${ALPINE_VERSION}"
+        VERSION = "current"
     }
 }
 
@@ -25,8 +29,8 @@ target "18" {
     inherits = ["base"]
     tags = genTags("18")
     args = {
-        ALPINE_VERSION = "3.19"
-        NODEJS_VERSION = "18"
+        ALPINE_VERSION = "${ALPINE_VERSION}"
+        VERSION = "18"
     }
 }
 
@@ -34,7 +38,7 @@ target "20" {
     inherits = ["base"]
     tags = genTags("20")
     args = {
-        ALPINE_VERSION = "3.19"
-        NODEJS_VERSION = "20"
+        ALPINE_VERSION = "${ALPINE_VERSION}"
+        VERSION = "20"
     }
 }
