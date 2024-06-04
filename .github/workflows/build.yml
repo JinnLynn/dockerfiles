@@ -63,7 +63,7 @@ jobs:
   python:
     if:  |
       ${{
-        always() &&
+        needs.alpine.result != 'failure' &&
         ( needs.changes.outputs.python == 'true' || inputs.image == 'python' )
       }}
     needs: [changes, alpine]
@@ -74,7 +74,7 @@ jobs:
   node:
     if:  |
       ${{
-        always() &&
+        needs.alpine.result != 'failure' &&
         ( needs.changes.outputs.node == 'true' || inputs.image == 'node' )
       }}
     needs: [changes, alpine]
