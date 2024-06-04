@@ -62,10 +62,9 @@ jobs:
     secrets: inherit
   python:
     if:  |
-      ${{
+      always() &&
         needs.alpine.result != 'failure' &&
         ( needs.changes.outputs.python == 'true' || inputs.image == 'python' )
-      }}
     needs: [changes, alpine]
     uses: ./.github/workflows/build-single.yml
     with:
@@ -73,10 +72,9 @@ jobs:
     secrets: inherit
   node:
     if:  |
-      ${{
-        needs.alpine.result != 'failure' &&
-        ( needs.changes.outputs.node == 'true' || inputs.image == 'node' )
-      }}
+      always() &&
+      needs.alpine.result != 'failure' &&
+      ( needs.changes.outputs.node == 'true' || inputs.image == 'node' )
     needs: [changes, alpine]
     uses: ./.github/workflows/build-single.yml
     with:
