@@ -9,6 +9,8 @@ on:
         type: string
         required: false
   push:
+    branches:
+      - master
     # paths:
     #   - 'alpine/**'
     #   - 'ubuntu/**'
