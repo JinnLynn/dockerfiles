@@ -16,7 +16,7 @@ on:
     #   - 'ubuntu/**'
     #   - 'python/**'
 env:
-  base: '["alpine", "ubuntu", "python"]'
+  base: '["alpine", "ubuntu", "python", "node"]'
 defaults:
   run:
     shell: bash
@@ -31,6 +31,7 @@ jobs:
       alpine: ${{ steps.filter.outputs.alpine }}
       ubuntu: ${{ steps.filter.outputs.ubuntu }}
       python: ${{ steps.filter.outputs.python }}
+      node: ${{ steps.filter.outputs.node }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -42,6 +43,7 @@ jobs:
             alpine: 'alpine/**'
             ubuntu: 'ubuntu/**'
             python: 'python/**'
+            node: 'node/**'
   alpine:
     if: ${{ needs.changes.outputs.alpine == 'true' || inputs.image == 'alpine' }}
     needs: changes
@@ -68,6 +70,17 @@ jobs:
     uses: ./.github/workflows/build-single.yml
     with:
       image: python
+    secrets: inherit
+  node:
+    if:  |
+      ${{
+        always() &&
+        ( needs.changes.outputs.node == 'true' || inputs.image == 'node' )
+      }}
+    needs: [changes, alpine]
+    uses: ./.github/workflows/build-single.yml
+    with:
+      image: node
     secrets: inherit
   specified:
     if: ${{ inputs.image && !contains(fromJSON(needs.changes.outputs.base), inputs.image) }}
