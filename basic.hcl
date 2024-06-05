@@ -17,33 +17,30 @@ variable "PLATFORM" { default = "" }
 variable "USE_DEFAULT_TARGET" { default = false }
 variable "MULTI_TARGET" { default = false }
 
+function "_v_fmt" {
+    params = [fmt, value]
+    result = value != "" ? format(fmt, value) : ""
+}
+
 function "genImage" {
     params = [img, ver]
-    result = "${notequal("", BUILD_USER) ? "${BUILD_USER}/": ""}${img}${notequal("", ver) ? ":${ver}": ""}"
+    result = "${_v_fmt("%s/", BUILD_USER)}${img}${_v_fmt(":%s", ver)}"
 }
 
 function "latestImage" {
     params = [img]
-    result = "${genImage(img, "")}"
+    result = genImage(img, "")
 }
 
 function "latestImages" {
-    params = [img, ver]
-    result = [
-        "${latestImage(img)}",
-        "${genImage(img, ver)}"
-    ]
-}
-
-function "testFunc" {
-    params         = []
-    variadic_params = items
-    result = split(",", "${BUILD_IMAGE}:${join(",${BUILD_IMAGE}:", concat(["latest"], items))}")
+    params = [img]
+    variadic_params = vers
+    result = concat([latestImage(img)], [for v in vers: genImage(img, v) if v != ""])
 }
 
 function "_gen_tags" {
     params = [items]
-    result = length(items) != 0 ? split(",", "${BUILD_IMAGE}:${join(",${BUILD_IMAGE}:", items)}") : [] #! 待优化
+    result = formatlist("${BUILD_IMAGE}:%s", [for s in items : s if s != ""])
 }
 
 function "genTags" {
@@ -55,26 +52,8 @@ function "genTags" {
 function "genLatestTags" {
     params          = []
     variadic_params = items
-    result          = concat(["${BUILD_IMAGE}"], _gen_tags(items))
+    result          = concat([BUILD_IMAGE], _gen_tags(items))
 }
-
-// // 待删除
-// function "genTag" {
-//     params = [ver]
-//     result = "${BUILD_IMAGE}:${ver}"
-// }
-
-// // 待删除
-// function "latestTag" {
-//     params = []
-//     result = "${BUILD_IMAGE}"
-// }
-
-// // 待删除
-// function "latestTags" {
-//     params = [ver]
-//     result = ver == null ? ["${latestTag()}", "${genTag(ver)}"] : ["${latestTag()}"]
-// }
 
 function "defaultPlatforms" {
     params = []
@@ -83,7 +62,7 @@ function "defaultPlatforms" {
 
 function "genPlatforms" {
     params = [plats]
-    result = notequal("", plats) ? split(",", plats) : split(",", BUILD_PLATFORM)
+    result = split(",", plats != "" ? plats : BUILD_PLATFORM)
 }
 
 function "validTargetName" {
@@ -95,7 +74,7 @@ function "validTargetName" {
 target "base" {
     tags = genLatestTags(VERSION)
     platforms = genPlatforms(PLATFORM)
-    args = notequal("", VERSION) ? { VERSION = "${VERSION}" } : {}
+    args = VERSION != "" ? { VERSION = "${VERSION}" } : {}
 }
 
 // 只是一个别名
@@ -103,5 +82,5 @@ target "base" {
 // 当 MULTI_TARGET==true 且 VERSION 存在 继承自 VERSION TARGET (将版本号的.改为_)
 // 否则 继承自 base
 target "latest" {
-    inherits = [MULTI_TARGET ? (notequal("", VERSION) ? validTargetName(VERSION) : "base") : "default"]
+    inherits = [MULTI_TARGET ? (VERSION != "" ? validTargetName(VERSION) : "base") : "default"]
 }
