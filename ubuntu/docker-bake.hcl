@@ -1,26 +1,29 @@
 variable "VERSION" { default = "24.04" }
 
+variable "MULTI_TARGET" { default = true }
 # ubuntu 官方镜像没有 linux/arm/v6 架构
 variable "PLATFORM" {
     default = "linux/amd64,linux/arm64,linux/arm/v7"
 }
 
 group "default" {
-    targets = ["latest", "edge", "20_04", "22_04"]
+    targets = ["24_04", "22_04", "20_04", "edge"]
 }
 
-target "latest" {
+// =====
+// latest
+target "24_04" {
     inherits = ["base"]
     args = {
-        VERSION = "${VERSION}"
+        VERSION = "24.04"
     }
 }
-// =====
-target "edge" {
+
+target "22_04" {
     inherits = ["base"]
-    tags = genTags("edge")
+    tags = genTags("22.04")
     args = {
-        VERSION = "rolling"
+        VERSION = "22.04"
     }
 }
 
@@ -32,10 +35,10 @@ target "20_04" {
     }
 }
 
-target "22_04" {
+target "edge" {
     inherits = ["base"]
-    tags = genTags("22.04")
+    tags = genTags("edge")
     args = {
-        VERSION = "22.04"
+        VERSION = "rolling"
     }
 }

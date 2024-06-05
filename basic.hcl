@@ -10,8 +10,12 @@ variable "BUILD_PLATFORM" {
 // ===
 
 // 相应的hcl文件可重写
+// 最新的版本 image:latest安装的版本
 variable "VERSION" { default = "" }
+// 多架构平台使用的平台 不设置默认为 BUILD_PLATFORM
 variable "PLATFORM" { default = "" }
+variable "USE_DEFAULT_TARGET" { default = false }
+variable "MULTI_TARGET" { default = false }
 
 function "genImage" {
     params = [img, ver]
@@ -82,8 +86,22 @@ function "genPlatforms" {
     result = notequal("", plats) ? split(",", plats) : split(",", BUILD_PLATFORM)
 }
 
+function "validTargetName" {
+    params = [str]
+    result = replace(str, ".", "_")
+}
+
 // ===
 target "base" {
     tags = genLatestTags(VERSION)
     platforms = genPlatforms(PLATFORM)
+    args = notequal("", VERSION) ? { VERSION = "${VERSION}" } : {}
+}
+
+// 只是一个别名
+// 当 MULTI_TARGET==false 继承自 default
+// 当 MULTI_TARGET==true 且 VERSION 存在 继承自 VERSION TARGET (将版本号的.改为_)
+// 否则 继承自 base
+target "latest" {
+    inherits = [MULTI_TARGET ? (notequal("", VERSION) ? validTargetName(VERSION) : "base") : "default"]
 }

@@ -6,15 +6,8 @@ variable "VERSION" { default = "3.29.1" }
 // https://github.com/alist-org/alist-proxy
 variable "PROXY_VERSION" { default = "0.0.6" }
 
-group "default" {
-    targets = ["alist"]
-}
-
-target "alist" {
+target "default" {
     inherits = ["base"]
-    args = {
-        VERSION = "${VERSION}"
-    }
 }
 
 target "proxy" {
