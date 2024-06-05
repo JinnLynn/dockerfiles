@@ -1,4 +1,4 @@
-name: Automatic Build Image:edge
+name: build-edge
 
 on:
   workflow_dispatch:

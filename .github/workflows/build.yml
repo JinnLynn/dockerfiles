@@ -1,4 +1,4 @@
-name: Build and Push Image
+name: build
 on:
   workflow_dispatch:
     inputs:

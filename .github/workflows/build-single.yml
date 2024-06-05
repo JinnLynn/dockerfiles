@@ -1,4 +1,4 @@
-name: Reusable Build Single Image
+name: build-single
 
 on:
   workflow_call:
