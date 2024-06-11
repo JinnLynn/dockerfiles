@@ -1,6 +1,6 @@
 // alist
 // https://github.com/alist-org/alist
-variable "VERSION" { default = "3.29.1" }
+variable "VERSION" { default = "3.35.0" }
 
 // alist-proxy
 // https://github.com/alist-org/alist-proxy
