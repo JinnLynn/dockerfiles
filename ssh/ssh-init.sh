@@ -50,9 +50,15 @@ rm -rf ~/.ssh
 mkdir -p ~/.ssh
 chmod 700 ~/.ssh
 (
-    [ -n "$SSH_PUBLIC_KEY" ] && \
-        cat $SSH_PUBLIC_KEY || \
-        cat /app/etc/keys/*.pub
+    if [ -n "$SSH_PUBLIC_KEY" ]; then
+        if [ -f "$SSH_PUBLIC_KEY" ]; then
+            cat "$SSH_PUBLIC_KEY"
+        else
+            echo "$SSH_PUBLIC_KEY"
+        fi
+    fi
+
+    cat /app/etc/keys/*.pub
 ) >~/.ssh/authorized_keys 2>/dev/null
 chmod 600 ~/.ssh/authorized_keys 2>/dev/null
 
@@ -60,12 +66,18 @@ chmod 600 ~/.ssh/authorized_keys 2>/dev/null
 echo "root:${SSH_PASSWORD}" | chpasswd &>/dev/null
 
 # 检查服务端key
-for k in rsa dsa ecdsa ed25519; do
-    f="/etc/ssh/ssh_host_${k}_key"
-    if [ ! -f "$f" ]; then
-        ssh-keygen -q -f $f -t $k -N ''
-    fi
-done
+_HOST_KEYS="/app/etc/host-keys"
+if [ -d "$_HOST_KEYS" ]; then
+    find $_HOST_KEYS -name "ssh_host_*_key*" -print0 | xargs -0 -I {} cp {} /etc/ssh/
+    for k in rsa dsa ecdsa ed25519; do
+        f="/etc/ssh/ssh_host_${k}_key"
+        if [ ! -f "$f" ]; then
+            ssh-keygen -q -f $f -t $k -N ''
+        fi
+        chmod 644 ${f}.pub
+        chmod 600 ${f}
+    done
+fi
 
 cat <<EOF >$SSHD_CONF
 # 只有root用户 允许其登录 后面通过PasswordAuthentication控制是否允许密码登录
@@ -123,8 +135,8 @@ done
 echo "==="
 
 # ===
-if [ -z "$@" ]; then
+if [ $# -eq 0 ]; then
     set -- /usr/sbin/sshd -D -f $SSHD_CONF
 fi
 
-exec $@
+exec "$@"

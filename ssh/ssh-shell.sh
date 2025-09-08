@@ -9,16 +9,14 @@ fi
 # ===
 # 没有命令 正常执行交换模式
 # 这里禁止 仅输出信息
-alpine_ver=$(cat /etc/alpine-release)
-ssh_ver=$(ssh -V 2>&1 | awk -F, '{print $1}' | awk -F_ '{print $2}')
-ssl_ver=$(ssh -V 2>&1 | awk -F, '{print $2}' | awk '{print $2}')
+# alpine_ver=$(cat /etc/alpine-release)
+# ssh_ver=$(ssh -V 2>&1 | awk -F, '{print $1}' | awk -F_ '{print $2}')
+# ssl_ver=$(ssh -V 2>&1 | awk -F, '{print $2}' | awk '{print $2}')
 
 cat <<EOF
 
-Welcome to SSH Server.
-You've successfully authenticated, but I do not
-provide interactive shell access.
-
-OpenSSH_${ssh_ver} OpenSSL_${ssl_ver}
+Hi, Welcome to SSH Server.
+You've successfully authenticated,
+but this server does not provide interactive shell access.
 
 EOF
