@@ -1,8 +1,8 @@
-/alpine/future/
-
-_tmp/**
 _removed/**
 
+**/_tmp/**
+
+/alpine/future/
 genpac-server/
 genpac-watch/
 
