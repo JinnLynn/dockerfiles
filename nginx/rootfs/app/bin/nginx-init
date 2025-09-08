@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+
+if [ ! -f "/nginx.rc" ]; then
+    ln -sf /app/opt/nginx/nginx.rc /nginx.rc
+fi
+
 . /nginx.rc
 
 exec_init_dir() {
