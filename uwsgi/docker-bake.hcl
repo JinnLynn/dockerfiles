@@ -1,28 +1,27 @@
-// =====
-variable "BUILD_NAME" { default = "uwsgi" }
-variable "BUILD_USER" { default = "" }
-variable "BUILD_IMAGE" {
-    default = trimspace(BUILD_USER) != "" ? "${BUILD_USER}/${BUILD_NAME}" : "${BUILD_NAME}"
-}
-// =====
-
-
 group "default" {
-    targets = ["latest"]
+    targets = ["py3_13", "py3_12"]
 }
 
-target "latest" {
-    dockerfile = "Dockerfile"
-	tags = [
-        "${BUILD_IMAGE}",
-        "${BUILD_IMAGE}:py3"
-    ]
+//
+variable "PLATFORM" {
+    default = "linux/amd64,linux/arm64"
 }
 
-target "py2" {
-    context = "py2"
-    dockerfile = "Dockerfile"
-    tags = [
-        "${BUILD_IMAGE}:py2"
-    ]
+// ===
+// latest
+target "py3_13" {
+    inherits = ["base"]
+    tags = genLatestTags("py3.13", "py3")
+    args = {
+        PYTHON_VERSION = "3.13"
+    }
 }
+
+target "py3_12" {
+    inherits = ["base"]
+    tags = genTags("py3.12")
+    args = {
+        PYTHON_VERSION = "3.12"
+    }
+}
+
