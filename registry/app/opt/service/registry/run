@@ -1,0 +1,8 @@
+#!/usr/bin/env sh
+. /app/opt/runit/sv.rc
+
+: ${REGISTRY_CONFIG:="/app/etc/registry/config.yaml"}
+
+export OTEL_TRACES_EXPORTER=none
+
+exec registry serve $REGISTRY_CONFIG

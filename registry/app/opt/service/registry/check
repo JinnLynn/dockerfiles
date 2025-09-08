@@ -1,0 +1,11 @@
+#!/usr/bin/env sh
+
+if [ -n "$REGISTRY_HTTP_ADDR" ]; then
+    host=$(echo "$REGISTRY_HTTP_ADDR"  | awk -F ":" '{print $1}')
+    port=$(echo "$REGISTRY_HTTP_ADDR"  | awk -F ":" '{print $2}')
+    addr="http://${host:-127.0.0.1}:${port:-5000}"
+else
+    addr="http://127.0.0.1:5000"
+fi
+
+wget -O/dev/null -q -T1 -o/dev/null "$addr"

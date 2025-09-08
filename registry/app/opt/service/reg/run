@@ -1,0 +1,31 @@
+#!/usr/bin/env sh
+. /app/opt/runit/sv.rc
+
+: ${REG_UI_REGISTRY:=}
+: ${REG_UI_USER:=}
+: ${REG_UI_PASSWORD:=}
+: ${REG_UI_PORT:=8080}
+: ${REG_UI_ADDR:="0.0.0.0"}
+
+: ${REG_UI_DEBUG:=}
+: ${REG_UI_FORCE_NON_SSL:=1}
+
+: ${REG_UI_ASSET_PATH:="/app/run/reg-asset/"}
+
+sv check registry >/dev/null 2>&1 || exit 128
+
+if [ -z "$REG_UI_REGISTRY" ]; then
+    if [ -n "$REGISTRY_HTTP_ADDR" ]; then
+        host=$(echo "$REGISTRY_HTTP_ADDR"  | awk -F ":" '{print $1}')
+        port=$(echo "$REGISTRY_HTTP_ADDR"  | awk -F ":" '{print $2}')
+        REG_UI_REGISTRY="${host:-127.0.0.1}:${port:-5000}"
+    else
+        REG_UI_REGISTRY="127.0.0.1:5000"
+    fi
+fi
+
+mkdir -p "${REG_UI_ASSET_PATH}"
+
+exec reg server -r ${REG_UI_REGISTRY} --addr ${REG_UI_ADDR} --port ${REG_UI_PORT} \
+    ${REG_UI_USER:+-u $REG_UI_USER} ${REG_UI_PASSWORD:+-p $REG_UI_PASSWORD} \
+    ${REG_UI_DEBUG:+-d} --asset-path "${REG_UI_ASSET_PATH}" ${REG_UI_FORCE_NON_SSL:+-f}
