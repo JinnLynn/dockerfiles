@@ -1,4 +1,4 @@
-FROM jinnlynn/alpine:3.19
+FROM jinnlynn/alpine:3.21
 
 LABEL maintainer="JinnLynn <eatfishlin@gmail.com>"
 

@@ -109,22 +109,39 @@ update() {
 
     local tmp=$(mktemp)
 
+    _jq() {
+        cat $tmp | jq -r "$@"
+    }
+
     post_api Record.List "record_type=$record_type" >$tmp
     # cat $tmp | jq
     # return
 
-    local record_id=$(cat $tmp | jq -r '.records[0].id')
-    local record_value=$(cat $tmp | jq -r '.records[0].value')
-    [[ "$record_id" == "null" ]] && record_id=""
-    [[ "$record_value" == "null" ]] && record_value=""
+    local record_id=""
+    local record_value=""
+    if [[ "$(_jq '.records | length')" -gt 1 ]]; then
+        # 记录多于一条 删除全部
+        log "Clean records."
+        for i in $(_jq '[.records[].id ] | @tsv'); do
+            log "Delete record: $i"
+            post_api Record.Remove "record_id=$i"
+        done
+    else
+        record_id=$(_jq '.records[0].id')
+        record_value=$(_jq '.records[0].value')
+        [[ "$record_id" == "null" ]] && record_id=""
+        [[ "$record_value" == "null" ]] && record_value=""
+    fi
+    # echo $tmp
+    # return
 
     [[ -z "$record_id" ]] && {
-        cat $tmp | jq -e '.status.code == "10"' >/dev/null && {
+        # cat $tmp | jq -e '.status.code == "10"' >/dev/null && {
             # 记录不存在
             log "Create $record_type record."
             post_api Record.Create "record_type=$record_type&record_line=默认&value=$cur_ip" >$tmp
             return
-        }
+        # }
     }
 
     [[ -z "$record_id" ]] && {
