@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-. /entrypoint.common
+. /nginx.rc
 
 : ${NGINX_CLEAN:=}
 

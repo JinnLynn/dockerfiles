@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-. /entrypoint.common
+. /nginx.rc
 
 : ${NGINX_MODULE:=}
 
@@ -10,7 +10,7 @@ install_module() {
 
     local mod_need=""
     local mod_installed=""
-    for mod in "$mod_lst"; do
+    for mod in $mod_lst; do
         mod="nginx-mod-${mod}"
         if apk info -e $mod 1>/dev/null 2>&1; then
             mod_installed="$mod_installed $mod"
