@@ -1,0 +1,1 @@
+icloudpd --directory /app/local/data/xiaolu --cookie-directory /app/local/cookie/xiaolu --folder-structure {:%Y/%m} --watch-with-interval 86400 --domain cn --username 616163036@qq.com --log-level info
