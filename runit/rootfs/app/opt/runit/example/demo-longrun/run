@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+. /app/opt/runit/sv.rc
+
+while true; do
+    log_info "runit demo-longrun running..."
+    sleep 5
+done

@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+export RUNIT_ONCE=1
+. /app/opt/runit/sv.rc
+
+log_info "runit demo-oneshot start."
+sleep 2
+log_info "runit demo-oneshot stop."

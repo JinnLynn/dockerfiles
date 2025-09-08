@@ -1,0 +1,54 @@
+#! /usr/bin/env sh
+_parent_file=$(realpath $0)
+_job_dir=$(dirname $_parent_file)
+_job=$(basename $_job_dir)
+
+source /app/opt/runit/functions
+if [ -f "${_job_dir}/rc.sh" ]; then
+    . "${_job_dir}/rc.sh"
+fi
+
+RUNIT_JOB="$_job"
+
+: ${RUNIT_TEE:=on}
+: ${RUNIT_DATE:=}
+: ${RUNIT_ONCE:=}
+: ${RUNIT_LOG_PREFIX_LENGTH:=}
+
+export $(set | grep -E ^RUNIT_ | awk -F= '{printf "%s ", $1}')
+
+sv_status() {
+    sv status ${1:-$RUNIT_JOB} | awk -F: '{print $1}'
+}
+
+runit_is_run() {
+    [ "$_parent_file" = "${SVDIR}/${RUNIT_JOB}/run" ] && return 0 || return 1
+}
+
+#  ====
+if [ -n "$RUNIT_ONCE" ]; then
+    __runit_once() {
+        log_info "One-Shot service finished."
+        sv down "$_job"
+    }
+    trap "__runit_once" EXIT
+fi
+
+# 重定向输出到stdout和日志文件
+if [ "$RUNIT_TEE" != "off" ]; then
+    __runit_format_log() {
+        local _date=${RUNIT_DATE:+$(_log_date) }
+        while IFS= read -r line; do
+            if command -v format_log >/dev/null 2>&1; then
+                line=$(format_log "$line")
+            fi
+            echo_prefix "${RUNIT_JOB}" "${_date}${line}"
+        done
+    }
+
+    exec > >(__runit_format_log | tee -a /app/log/${RUNIT_JOB}.log) 2>&1
+fi
+
+if runit_is_run; then
+    log_info "Service${RUNIT_ONCE:+[One-Shot]} starting..."
+fi

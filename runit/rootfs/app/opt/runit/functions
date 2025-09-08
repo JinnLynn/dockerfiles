@@ -1,0 +1,78 @@
+#! /usr/bin/env sh
+
+_log_date() {
+    # 在alpine busybox环境下 date无法输出毫秒(%N)，需要安装coreutils
+    date "+%F %T.%+3N"
+}
+
+log() {
+    level=$(echo ${1:-I} | tr '[:lower:]' '[:upper:]')
+    shift 1
+    echo "$(_log_date) [${level:0:1}] $@"
+}
+
+log_debug() {
+    log debug "$@"
+}
+
+log_info() {
+    log info "$@"
+}
+
+log_warn() {
+    log warn "$@"
+}
+
+log_error() {
+    log error "$@"
+}
+
+echo_prefix() {
+    local prefix="${1:-}"
+    shift
+    printf "%${RUNIT_LOG_PREFIX_LENGTH:+-${RUNIT_LOG_PREFIX_LENGTH}}s %s\n" "[${prefix}]" "$@"
+}
+
+runit_info() {
+    echo_prefix "runit" "$@"
+}
+
+sv_check() {
+    while [ $# -gt 0 ]; do
+        if sv check $1 >/dev/null 2>&1; then
+            shift
+            continue
+        fi
+        return 1
+    done
+}
+
+sv_status() {
+    sv status $1 | awk -F: '{print $1}'
+}
+
+sv_is_running() {
+    [ "$(sv_status $1)" = "run" ] && return 0 || return 1
+}
+
+sv_is_down() {
+    [ "$(sv_status $1)" = "down" ] && return 0 || return 1
+}
+
+sv_is_up() {
+    [ "$(sv_status $1)" = "up" ] && return 0 || return 1
+}
+
+sv_is_fail() {
+    [ "$(sv_status $1)" = "fail" ] && return 0 || return 1
+}
+
+list_services() {
+    local dst="${1:-$SVDIR}"
+    find "$dst" -maxdepth 1 -mindepth 1 -type d | sort | while read -r line; do
+        if [ -z "$line" -o ! -x "$line/run" ]; then
+            continue
+        fi
+        echo -n "$(basename $line) "
+    done
+}

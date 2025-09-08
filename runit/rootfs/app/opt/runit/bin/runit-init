@@ -1,0 +1,23 @@
+#!/usr/bin/env sh
+
+: ${SVDIR:="/app/opt/service.d"}
+
+export SVDIR
+export PATH="/app/opt/runit/bin:$PATH"
+
+runit-env-check
+
+if [ -z "$@" ]; then
+    . /app/opt/runit/functions
+
+    if [ -n "$RUNIT_DEMO" ]; then
+        SVDIR="/app/opt/runit/example"
+        runit_info "=*= DEMO MODE =*="
+    fi
+
+    runit_info "SVDIR: $SVDIR"
+    runit_info "SVs:   $(list_services)"
+    exec runsvdir -P $SVDIR
+fi
+
+exec "$@"
