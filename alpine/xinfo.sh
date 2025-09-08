@@ -1,9 +1,9 @@
 #!/usr/bin/env sh
 #
-# REF: https://github.com/tonistiigi/xx/blob/master/base/xx-info
+# REF: https://github.com/tonistiigi/xx/
 # AUTHOR: JinnLynn <eatfishlin@gmail.com>
 
-VERSION="2023.12.25"
+VERSION="2504.29.0"
 
 # ===
 set -e
@@ -12,10 +12,10 @@ SCRIPT_EXEC="$0"
 SCRIPT_DIR="$(cd $(dirname $0); pwd)"
 SCRIPT_BASENAME="$(basename $0 | awk -F. '{print $1}')"
 
-: "${TARGETPLATFORM=}"
-: "${TARGETOS=}"
-: "${TARGETARCH=}"
-: "${TARGETVARIANT=}"
+: ${TARGETPLATFORM:=}
+: ${TARGETOS:=}
+: ${TARGETARCH:=}
+: ${TARGETVARIANT:=}
 
 : ${X_OS:=$(uname -s | tr [:upper:] [:lower:])}
 : ${X_MARCH:=$(uname -m)}
@@ -23,10 +23,12 @@ SCRIPT_BASENAME="$(basename $0 | awk -F. '{print $1}')"
 : ${X_VARIANT=}
 : ${X_DARCH:=}
 : ${X_VENDOR:=unknown}
+: ${X_VENDOR_VERSION:=}
 
 if [ -f /etc/os-release ]; then
     . /etc/os-release
     X_VENDOR=$ID
+    X_VENDOR_VERSION=$VERSION_ID
 fi
 
 if [ -n "$TARGETPLATFORM" ]; then
@@ -303,12 +305,18 @@ case "$sub_cmd" in
     "os")
         echo ${X_OS}
         ;;
-    "vendor")
-        echo ${X_VENDOR}
-        ;;
     "arch")
         process_darch $@
         echo ${X_DARCH:="$X_ARCH"}
+        ;;
+    "vendor")
+        echo ${X_VENDOR}
+        ;;
+    "vendor-version")
+        echo ${X_VENDOR_VERSION}
+        ;;
+    release|vendor-release)
+        echo "${X_VENDOR} ${X_VENDOR_VERSION}"
         ;;
     "variant")
         echo "$X_VARIANT"
@@ -318,15 +326,7 @@ case "$sub_cmd" in
         ;;
     "env")
         process_darch $@
-        echo "X_OS=${X_OS}"
-        echo "X_VENDOR=${X_VENDOR}"
-        echo "X_ARCH=${X_ARCH}"
-        echo "X_VARIANT=${X_VARIANT}"
-        echo "X_MARCH=${X_MARCH}"
-        echo "X_DARCH=${X_DARCH}"
-        echo "TARGETOS=${TARGETOS}"
-        echo "TARGETARCH=${TARGETARCH}"
-        echo "TARGETVARIANT=${TARGETVARIANT}"
+        set | grep -E "^(X_|TARGET)" | sort -r
         ;;
     "alpine-arch")
         echo "$X_ALPINE_ARCH"
