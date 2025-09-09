@@ -9,11 +9,8 @@ RUN set -ex && \
     pip install uwsgi && \
     apk del .build
 
-COPY app.py /app/opt/app.py
-COPY uwsgi-init.sh /app/bin/uwsgi-init
+COPY rootfs/ /
 
 WORKDIR /app/opt
-
-EXPOSE 8000
 
 ENTRYPOINT ["uwsgi-init"]
